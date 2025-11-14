@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://nsylrn8wy3p8"]
 
-[ext_resource type="Script" path="res://scripts/ui/MainMenu.gd" id="1_sljng"]
+[ext_resource type="Script" uid="uid://dcis0j7mihsdy" path="res://scripts/ui/MainMenu.gd" id="1_sljng"]
 
 [node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_sljng")
 start_run_button_path = NodePath("MenuContainer/StartRunButton")
 collection_button_path = NodePath("MenuContainer/CollectionButton")
@@ -11,18 +13,24 @@ settings_button_path = NodePath("MenuContainer/SettingsButton")
 exit_button_path = NodePath("MenuContainer/ExitButton")
 
 [node name="MenuContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
 
 [node name="StartRunButton" type="Button" parent="MenuContainer"]
+layout_mode = 2
 text = "Start Run"
 
 [node name="CollectionButton" type="Button" parent="MenuContainer"]
+layout_mode = 2
 text = "Collection"
 
 [node name="ChallengesButton" type="Button" parent="MenuContainer"]
+layout_mode = 2
 text = "Challenges"
 
 [node name="SettingsButton" type="Button" parent="MenuContainer"]
+layout_mode = 2
 text = "Settings"
 
 [node name="ExitButton" type="Button" parent="MenuContainer"]
+layout_mode = 2
 text = "Exit"
