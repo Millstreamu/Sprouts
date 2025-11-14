@@ -22,128 +22,132 @@ var _selected_card_index: int = 0
 var _cards: Array[Control] = []
 
 var _dummy_totems: Array = [
-    {"id": "totem.heartseed", "name": "Heartseed Totem", "unlocked": true},
-    {"id": "totem.stoneward", "name": "Stoneward Totem", "unlocked": false},
-    {"id": "totem.wavecall", "name": "Wavecall Totem", "unlocked": false},
-    {"id": "totem.bloomspire", "name": "Bloomspire Totem", "unlocked": true}
+	{"id": "totem.heartseed", "name": "Heartseed Totem", "unlocked": true},
+	{"id": "totem.stoneward", "name": "Stoneward Totem", "unlocked": false},
+	{"id": "totem.wavecall", "name": "Wavecall Totem", "unlocked": false},
+	{"id": "totem.bloomspire", "name": "Bloomspire Totem", "unlocked": true}
 ]
 
 var _dummy_sprouts: Array = [
-    {"id": "sprout.grumbler", "name": "Grumbler", "unlocked": true},
-    {"id": "sprout.amber_knight", "name": "Amber Knight", "unlocked": true},
-    {"id": "sprout.moss_golem", "name": "Moss Golem", "unlocked": false}
+	{"id": "sprout.grumbler", "name": "Grumbler", "unlocked": true},
+	{"id": "sprout.amber_knight", "name": "Amber Knight", "unlocked": true},
+	{"id": "sprout.moss_golem", "name": "Moss Golem", "unlocked": false}
 ]
 
 var _dummy_tiles: Array = [
-    {"id": "tile.nature.whispering_pine_forest", "name": "Whispering Pine Forest", "unlocked": true},
-    {"id": "tile.water.mirror_pool", "name": "Mirror Pool", "unlocked": true},
-    {"id": "tile.earth.stone_vein", "name": "Stone Vein", "unlocked": true},
-    {"id": "tile.mystic.soul_bloom", "name": "Soul Bloom", "unlocked": false},
-    {"id": "tile.aggression.thorn_watch", "name": "Thorn Watch", "unlocked": false}
+	{"id": "tile.nature.whispering_pine_forest", "name": "Whispering Pine Forest", "unlocked": true},
+	{"id": "tile.water.mirror_pool", "name": "Mirror Pool", "unlocked": true},
+	{"id": "tile.earth.stone_vein", "name": "Stone Vein", "unlocked": true},
+	{"id": "tile.mystic.soul_bloom", "name": "Soul Bloom", "unlocked": false},
+	{"id": "tile.aggression.thorn_watch", "name": "Thorn Watch", "unlocked": false}
 ]
 
 func _ready() -> void:
-    _tab_buttons = _collect_tab_buttons()
-    _back_button.pressed.connect(_go_back_to_main_menu)
-    _current_tab_index = TAB_TOTEMS
-    _refresh_tab_visuals()
-    _populate_cards_for_current_tab()
-    print("Collection: ready")
+	_tab_buttons = _collect_tab_buttons()
+	_back_button.pressed.connect(_go_back_to_main_menu)
+	_current_tab_index = TAB_TOTEMS
+	_refresh_tab_visuals()
+	_populate_cards_for_current_tab()
+	print("Collection: ready")
 
 func _collect_tab_buttons() -> Array[Button]:
-    var buttons: Array[Button] = []
-    for child in _tabs_container.get_children():
-        if child is Button:
-            buttons.append(child as Button)
-    return buttons
+	var buttons: Array[Button] = []
+	for child in _tabs_container.get_children():
+		if child is Button:
+			buttons.append(child as Button)
+	return buttons
 
 func _refresh_tab_visuals() -> void:
-    for i in _tab_buttons.size():
-        var button: Button = _tab_buttons[i]
-        if i == _current_tab_index:
-            button.grab_focus()
+	for i in _tab_buttons.size():
+		var button: Button = _tab_buttons[i]
+		if i == _current_tab_index:
+			button.grab_focus()
 
 func _get_current_tab_data() -> Array:
-    if _current_tab_index == TAB_TOTEMS:
-        return _dummy_totems
-    if _current_tab_index == TAB_SPROUTS:
-        return _dummy_sprouts
-    return _dummy_tiles
+	if _current_tab_index == TAB_TOTEMS:
+		return _dummy_totems
+	if _current_tab_index == TAB_SPROUTS:
+		return _dummy_sprouts
+	return _dummy_tiles
 
 func _clear_cards() -> void:
-    for child in _card_grid.get_children():
-        child.queue_free()
-    _cards.clear()
-    _selected_card_index = 0
+	for child in _card_grid.get_children():
+		child.queue_free()
+	_cards.clear()
+	_selected_card_index = 0
 
 func _populate_cards_for_current_tab() -> void:
-    _clear_cards()
-    if card_scene == null:
-        return
-    var data: Array = _get_current_tab_data()
-    for entry in data:
-        var card := card_scene.instantiate() as Control
-        _card_grid.add_child(card)
-        _cards.append(card)
-        if card.has_node("NameLabel"):
-            var label := card.get_node("NameLabel") as Label
-            if entry.get("unlocked", false):
-                label.text = str(entry.get("name", ""))
-            else:
-                label.text = "Locked"
-        card.set_meta("card_id", entry.get("id", ""))
-    _update_card_selection()
+	_clear_cards()
+	if card_scene == null:
+		print("Collection: card_scene is NULL, no cards will be created")
+		return
+	var data: Array = _get_current_tab_data()
+	for entry in data:
+		var card := card_scene.instantiate() as Control
+		_card_grid.add_child(card)
+		_cards.append(card)
+		if card.has_node("NameLabel"):
+			var label := card.get_node("NameLabel") as Label
+			if entry.get("unlocked", false):
+				label.text = str(entry.get("name", ""))
+			else:
+				label.text = "Locked"
+		card.set_meta("card_id", entry.get("id", ""))
+	
+	print("Collection: cards populated = %d" % _cards.size())  # 👈 debug line here
+	_update_card_selection()
+
 
 func _update_card_selection() -> void:
-    if _cards.is_empty():
-        _selected_card_index = 0
-        return
-    _selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
-    print("Collection: selected card index = %d" % _selected_card_index)
+	if _cards.is_empty():
+		_selected_card_index = 0
+		return
+	_selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
+	print("Collection: selected card index = %d" % _selected_card_index)
 
 func _move_card_selection(delta: int) -> void:
-    if _cards.is_empty():
-        return
-    _selected_card_index += delta
-    _selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
-    _update_card_selection()
+	if _cards.is_empty():
+		return
+	_selected_card_index += delta
+	_selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
+	_update_card_selection()
 
 func _change_tab(delta: int) -> void:
-    _current_tab_index += delta
-    _current_tab_index = clampi(_current_tab_index, TAB_TOTEMS, TAB_TILES)
-    var tab_names := ["Totems", "Sprouts", "Tiles"]
-    print("Collection: active tab = %s" % tab_names[_current_tab_index])
-    _refresh_tab_visuals()
-    _populate_cards_for_current_tab()
+	_current_tab_index += delta
+	_current_tab_index = clampi(_current_tab_index, TAB_TOTEMS, TAB_TILES)
+	var tab_names := ["Totems", "Sprouts", "Tiles"]
+	print("Collection: active tab = %s" % tab_names[_current_tab_index])
+	_refresh_tab_visuals()
+	_populate_cards_for_current_tab()
 
 func _activate_current_card() -> void:
-    if _cards.is_empty():
-        return
-    _selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
-    var card: Control = _cards[_selected_card_index]
-    var id: String = str(card.get_meta("card_id", ""))
-    print("Collection: activated card %s on tab %d" % [id, _current_tab_index])
+	if _cards.is_empty():
+		return
+	_selected_card_index = clampi(_selected_card_index, 0, _cards.size() - 1)
+	var card: Control = _cards[_selected_card_index]
+	var id: String = str(card.get_meta("card_id", ""))
+	print("Collection: activated card %s on tab %d" % [id, _current_tab_index])
 
 func _go_back_to_main_menu() -> void:
-    print("Collection: back to main menu")
-    get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+	print("Collection: back to main menu")
+	get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event.is_action_pressed("ui_left"):
-        _change_tab(-1)
-        accept_event()
-    elif event.is_action_pressed("ui_right"):
-        _change_tab(1)
-        accept_event()
-    elif event.is_action_pressed("ui_up"):
-        _move_card_selection(-4)
-        accept_event()
-    elif event.is_action_pressed("ui_down"):
-        _move_card_selection(4)
-        accept_event()
-    elif event.is_action_pressed("ui_accept"):
-        _activate_current_card()
-        accept_event()
-    elif event.is_action_pressed("ui_cancel"):
-        _go_back_to_main_menu()
-        accept_event()
+	if event.is_action_pressed("ui_left"):
+		_change_tab(-1)
+		accept_event()
+	elif event.is_action_pressed("ui_right"):
+		_change_tab(1)
+		accept_event()
+	elif event.is_action_pressed("ui_up"):
+		_move_card_selection(-4)
+		accept_event()
+	elif event.is_action_pressed("ui_down"):
+		_move_card_selection(4)
+		accept_event()
+	elif event.is_action_pressed("ui_accept"):
+		_activate_current_card()
+		accept_event()
+	elif event.is_action_pressed("ui_cancel"):
+		_go_back_to_main_menu()
+		accept_event()

@@ -1,10 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://dr45n45cbvvql"]
 
 [ext_resource type="Script" uid="uid://ct1lyy1do1r1k" path="res://scripts/ui/Collection.gd" id="1_j4snc"]
-[ext_resource type="PackedScene" path="res://scenes/ui/CardBase.tscn" id="2_m1h0k"]
+[ext_resource type="PackedScene" uid="uid://byduq8qe85ytm" path="res://scenes/ui/CardBase.tscn" id="2_m1h0k"]
 
 [node name="Collection" type="Control"]
 layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_j4snc")
 tabs_container_path = NodePath("TabsContainer")
 scroll_container_path = NodePath("Scroll")
@@ -14,6 +15,9 @@ card_scene = ExtResource("2_m1h0k")
 
 [node name="TabsContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
+offset_top = 36.0
+offset_right = 186.0
+offset_bottom = 67.0
 
 [node name="TotemsTabButton" type="Button" parent="TabsContainer"]
 layout_mode = 2
@@ -29,6 +33,8 @@ text = "Tiles"
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
+offset_top = 73.0
+offset_bottom = 73.0
 size_flags_vertical = 3
 
 [node name="CardGrid" type="GridContainer" parent="Scroll"]
@@ -37,4 +43,7 @@ columns = 4
 
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 2
+offset_top = 2.0
+offset_right = 45.0
+offset_bottom = 33.0
 text = "Back"
