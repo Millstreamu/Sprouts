@@ -53,15 +53,16 @@ var _current_tile_id: String = ""
 var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
 
-var _dummy_tiles: Array = [
-    {"id": "tile.nature.whispering_pine_forest", "name": "Whispering Pine Forest"},
-    {"id": "tile.water.mirror_pool", "name": "Mirror Pool"},
-    {"id": "tile.earth.stone_vein", "name": "Stone Vein"},
-    {"id": "tile.mystic.soul_bloom", "name": "Soul Bloom"},
-    {"id": "tile.aggression.thorn_watch", "name": "Thorn Watch"}
-]
+var _tile_defs: Array = []
+var _tile_defs_by_id: Dictionary = {}
+var _dummy_tiles: Array = []
 
 var _current_commune_choices: Array = []
+
+var _res_nature: int = 0
+var _res_water: int = 0
+var _res_earth: int = 0
+var _res_souls: int = 0
 
 func _ready() -> void:
     _back_button.pressed.connect(_on_back_pressed)
@@ -80,12 +81,17 @@ func _ready() -> void:
         _select_commune_choice(2)
     )
     _init_tiles()
+    _load_tile_defs()
     _turn_number = 1
     _phase = PHASE_COMMUNE
     _current_phase = "Commune"
     _current_tile_id = ""
     _current_tile_name = ""
     _has_placed_this_turn = false
+    _res_nature = 0
+    _res_water = 0
+    _res_earth = 0
+    _res_souls = 0
     _update_turn_and_phase_labels()
     _update_tile_panel()
     _update_resource_label()
@@ -151,8 +157,42 @@ func _init_tiles() -> void:
     for r in GRID_HEIGHT:
         var row: Array = []
         for q in GRID_WIDTH:
-            row.append(false)
+            row.append("")
         _tiles.append(row)
+
+func _load_tile_defs() -> void:
+    _tile_defs.clear()
+    _tile_defs_by_id.clear()
+    _dummy_tiles.clear()
+
+    var path := "res://data/tiles.json"
+    if not FileAccess.file_exists(path):
+        print("ShroudWorld: tiles.json not found at ", path)
+        return
+
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        print("ShroudWorld: failed to open tiles.json")
+        return
+
+    var text := file.get_as_text()
+    var parsed := JSON.parse_string(text)
+    if parsed == null:
+        print("ShroudWorld: JSON parse failed for tiles.json")
+        return
+
+    if parsed is Array:
+        for entry in parsed:
+            if entry is Dictionary:
+                var id := str(entry.get("id", ""))
+                if id.is_empty():
+                    continue
+                _tile_defs.append(entry)
+                _tile_defs_by_id[id] = entry
+        _dummy_tiles = _tile_defs.duplicate()
+        print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
+    else:
+        print("ShroudWorld: tiles.json root is not an Array")
 
 func _clamp_selector() -> void:
     _selector_q = clampi(_selector_q, 0, GRID_WIDTH - 1)
@@ -184,7 +224,47 @@ func _update_tile_panel() -> void:
         _tile_info_label.text = "Current Tile: %s" % _current_tile_name
 
 func _update_resource_label() -> void:
-    _resource_label.text = "Nature: 0 | Water: 0 | Earth: 0 | Souls: 0"
+    _resource_label.text = "Nature: %d | Water: %d | Earth: %d | Souls: %d" % [
+        _res_nature,
+        _res_water,
+        _res_earth,
+        _res_souls
+    ]
+
+func _generate_resources_for_turn() -> void:
+    var add_nature: int = 0
+    var add_water: int = 0
+    var add_earth: int = 0
+    var add_souls: int = 0
+
+    for r in GRID_HEIGHT:
+        for q in GRID_WIDTH:
+            var tile_id := str(_tiles[r][q])
+            if tile_id == "":
+                continue
+            if not _tile_defs_by_id.has(tile_id):
+                continue
+            var def := _tile_defs_by_id[tile_id]
+            var base_output := def.get("base_output", {})
+            if base_output is Dictionary:
+                add_nature += int(base_output.get("nature", 0))
+                add_water += int(base_output.get("water", 0))
+                add_earth += int(base_output.get("earth", 0))
+                add_souls += int(base_output.get("souls", 0))
+
+    _res_nature += add_nature
+    _res_water += add_water
+    _res_earth += add_earth
+    _res_souls += add_souls
+
+    print("ShroudWorld: resources gained this turn -> N:%d W:%d E:%d S:%d" % [
+        add_nature,
+        add_water,
+        add_earth,
+        add_souls
+    ])
+
+    _update_resource_label()
 
 func _end_turn() -> void:
     if _phase != PHASE_PLAYER:
@@ -195,6 +275,7 @@ func _end_turn() -> void:
         print("ShroudWorld: must place a tile before ending the turn")
         return
 
+    _generate_resources_for_turn()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
@@ -213,11 +294,11 @@ func _place_tile_at_selector() -> void:
         print("ShroudWorld: already placed a tile this turn")
         return
 
-    if _tiles[_selector_r][_selector_q]:
+    if _tiles[_selector_r][_selector_q] != "":
         print("ShroudWorld: tile already placed at (%d, %d)" % [_selector_q, _selector_r])
         return
 
-    _tiles[_selector_r][_selector_q] = true
+    _tiles[_selector_r][_selector_q] = _current_tile_id
     _has_placed_this_turn = true
     print("ShroudWorld: placed %s at (%d, %d)" % [_current_tile_id, _selector_q, _selector_r])
     _tile_info_label.text = "Placed %s at (%d, %d)" % [_current_tile_name, _selector_q, _selector_r]
@@ -249,9 +330,12 @@ func _show_commune() -> void:
     _update_turn_and_phase_labels()
     _current_commune_choices.clear()
     var count := 3
-    for i in count:
-        var idx := randi() % _dummy_tiles.size()
-        _current_commune_choices.append(_dummy_tiles[idx])
+    if _dummy_tiles.is_empty():
+        print("ShroudWorld: no tiles loaded for Commune")
+    else:
+        for i in count:
+            var idx := randi() % _dummy_tiles.size()
+            _current_commune_choices.append(_dummy_tiles[idx])
     for i in _tile_choice_buttons.size():
         var button := _tile_choice_buttons[i]
         if i < _current_commune_choices.size():
