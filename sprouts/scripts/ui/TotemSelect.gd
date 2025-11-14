@@ -198,7 +198,7 @@ func _continue_if_ready() -> void:
         return
     var current: Dictionary = _totems[_current_totem_index]
     print("TotemSelect: CONTINUE with totem %s, difficulty %d" % [current.get("id", ""), _selected_difficulty])
-    # TODO: get_tree().change_scene_to_file("res://scenes/run_setup/SproutSelect.tscn")
+    get_tree().change_scene_to_file("res://scenes/run_setup/SproutSelect.tscn")
 
 func _go_back_to_main_menu() -> void:
     print("TotemSelect: back to main menu")
