@@ -1,0 +1,103 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/ui/TotemSelect.gd" type="Script" id="1"]
+
+[node name="TotemSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+totem_name_label_path = NodePath("TotemDisplay/TotemNameLabel")
+totem_description_label_path = NodePath("TotemDisplay/TotemDescriptionLabel")
+prev_totem_button_path = NodePath("TotemCarouselControls/PrevTotemButton")
+next_totem_button_path = NodePath("TotemCarouselControls/NextTotemButton")
+difficulty_container_path = NodePath("DifficultyContainer")
+back_button_path = NodePath("BackButton")
+status_label_path = NodePath("StatusLabel")
+
+[node name="TotemDisplay" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.25
+anchor_right = 0.5
+anchor_bottom = 0.25
+offset_left = -150.0
+offset_top = -60.0
+offset_right = 150.0
+offset_bottom = 60.0
+
+[node name="TotemNameLabel" type="Label" parent="TotemDisplay"]
+layout_mode = 2
+text = "Totem Name"
+
+[node name="TotemDescriptionLabel" type="Label" parent="TotemDisplay"]
+layout_mode = 2
+text = "Totem description goes here."
+
+[node name="TotemCarouselControls" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -20.0
+offset_right = 100.0
+offset_bottom = 20.0
+
+[node name="PrevTotemButton" type="Button" parent="TotemCarouselControls"]
+layout_mode = 2
+text = "<"
+
+[node name="NextTotemButton" type="Button" parent="TotemCarouselControls"]
+layout_mode = 2
+text = ">"
+
+[node name="DifficultyContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.65
+anchor_right = 0.5
+anchor_bottom = 0.65
+offset_left = -90.0
+offset_top = -20.0
+offset_right = 90.0
+offset_bottom = 20.0
+
+[node name="EasyButton" type="Button" parent="DifficultyContainer"]
+layout_mode = 2
+text = "\xe2\x97\x8f"
+
+[node name="MediumButton" type="Button" parent="DifficultyContainer"]
+layout_mode = 2
+text = "\xe2\x97\x8f"
+
+[node name="HardButton" type="Button" parent="DifficultyContainer"]
+layout_mode = 2
+text = "\xe2\x97\x8f"
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.8
+anchor_right = 0.5
+anchor_bottom = 0.8
+offset_left = -150.0
+offset_top = -15.0
+offset_right = 150.0
+offset_bottom = 15.0
+text = "Status text"
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 120.0
+offset_bottom = 60.0
+text = "Back"
