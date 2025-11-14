@@ -6,11 +6,7 @@
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_sljng")
-start_run_button_path = NodePath("MenuContainer/StartRunButton")
-collection_button_path = NodePath("MenuContainer/CollectionButton")
-challenges_button_path = NodePath("MenuContainer/ChallengesButton")
-settings_button_path = NodePath("MenuContainer/SettingsButton")
-exit_button_path = NodePath("MenuContainer/ExitButton")
+menu_container_path = NodePath("MenuContainer")
 
 [node name="MenuContainer" type="VBoxContainer" parent="."]
 layout_mode = 0
