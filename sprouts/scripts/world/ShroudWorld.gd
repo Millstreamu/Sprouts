@@ -156,6 +156,11 @@ func _input(event: InputEvent) -> void:
             accept_event()
             return
 
+        if event.keycode == Key.KEY_B:
+            _start_debug_battle()
+            accept_event()
+            return
+
     if Input.is_action_just_pressed("ui_cancel"):
         if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
             _hide_sprout_registry()
@@ -870,3 +875,63 @@ func is_decay_at(q: int, r: int) -> bool:
     if q < 0 or q >= row.size():
         return false
     return bool(row[q])
+
+func _build_player_battle_team_from_sprouts() -> Array:
+    var team: Array = []
+    for sprout in _sprouts:
+        var name := str(sprout.get("id", "Sprout"))
+        var level := int(sprout.get("level", 1))
+        var max_hp := 60 + level * 10
+        var attack := 10 + level * 2
+        var cooldown := 3.0
+        var unit := {
+            "name": name,
+            "max_hp": max_hp,
+            "hp": max_hp,
+            "attack": attack,
+            "cooldown": cooldown,
+            "cooldown_remaining": randf_range(0.0, cooldown),
+            "is_player": true
+        }
+        team.append(unit)
+    return team
+
+func _build_dummy_enemy_battle_team() -> Array:
+    var team: Array = []
+    for i in 3:
+        var cooldown := 3.5
+        var unit := {
+            "name": "Smog_%d" % i,
+            "max_hp": 70,
+            "hp": 70,
+            "attack": 9,
+            "cooldown": cooldown,
+            "cooldown_remaining": randf_range(0.0, cooldown),
+            "is_player": false
+        }
+        team.append(unit)
+    return team
+
+func _start_debug_battle() -> void:
+    if not Engine.has_singleton("BattleContext"):
+        print("ShroudWorld: cannot start battle, BattleContext singleton not found")
+        return
+
+    var ctx := BattleContext
+    ctx.reset()
+
+    var player_team := _build_player_battle_team_from_sprouts()
+    if player_team.is_empty():
+        print("ShroudWorld: no sprouts available, using dummy player team")
+        player_team = _build_dummy_enemy_battle_team()
+        for unit in player_team:
+            unit["is_player"] = true
+
+    var enemy_team := _build_dummy_enemy_battle_team()
+
+    ctx.player_team = player_team
+    ctx.enemy_team = enemy_team
+    ctx.debug_print()
+
+    print("ShroudWorld: starting debug battle")
+    get_tree().change_scene_to_file("res://scenes/world/BattleWindow.tscn")
