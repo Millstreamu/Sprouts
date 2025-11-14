@@ -53,5 +53,27 @@
       "earth": 0,
       "souls": 0
     }
+  },
+  {
+    "id": "tile.special.overgrowth",
+    "name": "Overgrowth",
+    "category": "Nature",
+    "base_output": {
+      "nature": 0,
+      "water": 0,
+      "earth": 0,
+      "souls": 0
+    }
+  },
+  {
+    "id": "tile.special.grove",
+    "name": "Grove",
+    "category": "Nature",
+    "base_output": {
+      "nature": 1,
+      "water": 0,
+      "earth": 0,
+      "souls": 0
+    }
   }
 ]
