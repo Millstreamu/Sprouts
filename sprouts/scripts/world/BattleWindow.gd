@@ -239,6 +239,7 @@ func _emit_battle_finished() -> void:
     var cleaned_player: Array = []
     for unit in _player_units:
         var copy := {
+            "instance_id": int(unit.get("instance_id", -1)),
             "name": str(unit.get("name", "")),
             "max_hp": int(unit.get("max_hp", 0)),
             "hp": int(unit.get("hp", 0)),
@@ -252,6 +253,7 @@ func _emit_battle_finished() -> void:
     var cleaned_enemy: Array = []
     for unit in _enemy_units:
         var copy := {
+            "instance_id": int(unit.get("instance_id", -1)),
             "name": str(unit.get("name", "")),
             "max_hp": int(unit.get("max_hp", 0)),
             "hp": int(unit.get("hp", 0)),
