@@ -66,13 +66,11 @@ func _on_start_run() -> void:
 
 func _on_collection() -> void:
     print("MainMenu: Collection selected")
-    # TODO: change scene to Collection scene
-    # get_tree().change_scene_to_file("res://scenes/meta/Collection.tscn")
+    get_tree().change_scene_to_file("res://scenes/meta/Collection.tscn")
 
 func _on_challenges() -> void:
     print("MainMenu: Challenges selected")
-    # TODO: change scene to Challenges scene
-    # get_tree().change_scene_to_file("res://scenes/meta/Challenges.tscn")
+    get_tree().change_scene_to_file("res://scenes/meta/Challenges.tscn")
 
 func _on_settings() -> void:
     print("MainMenu: Settings selected")

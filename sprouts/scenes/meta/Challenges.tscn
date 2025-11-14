@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://dejt5fqs1ctcq"]
+
+[ext_resource type="Script" uid="uid://cl9p0orx2v6j6" path="res://scripts/ui/Challenges.gd" id="1_lc0vl"]
+
+[node name="Challenges" type="Control"]
+script = ExtResource("1_lc0vl")
+challenges_list_path = NodePath("ChallengesList")
+back_button_path = NodePath("BackButton")
+
+[node name="ChallengesList" type="VBoxContainer" parent="."]
+layout_mode = 0
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 2
+text = "Back"
