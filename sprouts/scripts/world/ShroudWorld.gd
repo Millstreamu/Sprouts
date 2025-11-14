@@ -49,6 +49,8 @@ var _selector_q: int = 0
 var _selector_r: int = 0
 
 var _tiles: Array = []
+var _decay_grid: Array = []
+var _decay_count: int = 0
 var _current_tile_id: String = ""
 var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
@@ -81,6 +83,7 @@ func _ready() -> void:
         _select_commune_choice(2)
     )
     _init_tiles()
+    _init_decay_grid()
     _load_tile_defs()
     _turn_number = 1
     _phase = PHASE_COMMUNE
@@ -92,13 +95,15 @@ func _ready() -> void:
     _res_water = 0
     _res_earth = 0
     _res_souls = 0
+    _spawn_initial_decay_sources()
     _update_turn_and_phase_labels()
     _update_tile_panel()
     _update_resource_label()
     _end_turn_hint_label.text = "RL - Next Turn (Press V)"
     _show_commune()
     _update_selector_position()
-    _hex_grid.update()
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
     _selector.update()
     if Engine.has_singleton("RunContext"):
         var ctx := RunContext
@@ -171,6 +176,65 @@ func _init_tiles() -> void:
         for q in GRID_WIDTH:
             row.append("")
         _tiles.append(row)
+
+func _init_decay_grid() -> void:
+    _decay_grid.clear()
+    _decay_count = 0
+    for r in GRID_HEIGHT:
+        var row: Array = []
+        for q in GRID_WIDTH:
+            row.append(false)
+        _decay_grid.append(row)
+
+func _get_initial_decay_sources_for_difficulty() -> int:
+    var difficulty: int = 0
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        difficulty = ctx.selected_difficulty
+    match difficulty:
+        0:
+            return 1
+        1:
+            return 2
+        2:
+            return 3
+        _:
+            return 1
+
+func _spawn_initial_decay_sources() -> void:
+    var count := _get_initial_decay_sources_for_difficulty()
+    var attempts := 0
+    var max_attempts := 100
+
+    while count > 0 and attempts < max_attempts:
+        attempts += 1
+        var edge := randi() % 4
+        var q := 0
+        var r := 0
+        match edge:
+            0:
+                r = 0
+                q = randi() % GRID_WIDTH
+            1:
+                r = GRID_HEIGHT - 1
+                q = randi() % GRID_WIDTH
+            2:
+                q = 0
+                r = randi() % GRID_HEIGHT
+            3:
+                q = GRID_WIDTH - 1
+                r = randi() % GRID_HEIGHT
+
+        if _decay_grid[r][q]:
+            continue
+
+        _decay_grid[r][q] = true
+        _decay_count += 1
+        count -= 1
+        print("ShroudWorld: spawned initial decay at (%d, %d)" % [q, r])
+
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
 
 func _load_tile_defs() -> void:
     _tile_defs.clear()
@@ -288,6 +352,7 @@ func _end_turn() -> void:
         return
 
     _generate_resources_for_turn()
+    _spread_decay_for_turn()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
@@ -317,6 +382,8 @@ func _place_tile_at_selector() -> void:
     _current_tile_id = ""
     _current_tile_name = ""
     _update_tile_panel()
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
 
 func _move_selector(dq: int, dr: int) -> void:
     _selector_q += dq
@@ -376,3 +443,78 @@ func _select_commune_choice(index: int) -> void:
     _update_turn_and_phase_labels()
     _commune_overlay.visible = false
     print("ShroudWorld: selected tile %s" % _current_tile_id)
+
+func _get_neighbors(q: int, r: int) -> Array[Vector2i]:
+    var neighbors: Array[Vector2i] = []
+    var dirs := [
+        Vector2i(-1, 0),
+        Vector2i(1, 0),
+        Vector2i(0, -1),
+        Vector2i(0, 1)
+    ]
+    for d in dirs:
+        var nq := q + d.x
+        var nr := r + d.y
+        if nq >= 0 and nq < GRID_WIDTH and nr >= 0 and nr < GRID_HEIGHT:
+            neighbors.append(Vector2i(nq, nr))
+    return neighbors
+
+func _spread_decay_for_turn() -> void:
+    var new_decay_positions: Array[Vector2i] = []
+
+    for r in GRID_HEIGHT:
+        for q in GRID_WIDTH:
+            if not _decay_grid[r][q]:
+                continue
+
+            var neighbors := _get_neighbors(q, r)
+            var possible_targets: Array[Vector2i] = []
+
+            for v in neighbors:
+                var nq := v.x
+                var nr := v.y
+                if _decay_grid[nr][nq]:
+                    continue
+                possible_targets.append(v)
+
+            if possible_targets.is_empty():
+                continue
+
+            var idx := randi() % possible_targets.size()
+            var chosen: Vector2i = possible_targets[idx]
+            new_decay_positions.append(chosen)
+
+    for v in new_decay_positions:
+        var q := v.x
+        var r := v.y
+        if not _decay_grid[r][q]:
+            _decay_grid[r][q] = true
+            _decay_count += 1
+
+            if _tiles[r][q] != "":
+                print("ShroudWorld: decay overtook tile %s at (%d, %d)" % [_tiles[r][q], q, r])
+                _tiles[r][q] = ""
+
+    if not new_decay_positions.is_empty():
+        print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
+    else:
+        print("ShroudWorld: decay did not spread this turn")
+
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
+
+func get_tile_id_at(q: int, r: int) -> String:
+    if r < 0 or r >= _tiles.size():
+        return ""
+    var row: Array = _tiles[r]
+    if q < 0 or q >= row.size():
+        return ""
+    return str(row[q])
+
+func is_decay_at(q: int, r: int) -> bool:
+    if r < 0 or r >= _decay_grid.size():
+        return false
+    var row: Array = _decay_grid[r]
+    if q < 0 or q >= row.size():
+        return false
+    return bool(row[q])
