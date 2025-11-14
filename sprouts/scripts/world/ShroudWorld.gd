@@ -16,6 +16,8 @@ class_name ShroudWorldScreen
 @export var tile_choice_button_0_path: NodePath
 @export var tile_choice_button_1_path: NodePath
 @export var tile_choice_button_2_path: NodePath
+@export var sprout_registry_overlay_path: NodePath
+@export var sprout_registry_list_path: NodePath
 
 @onready var _turn_label: Label = get_node(turn_label_path) as Label
 @onready var _phase_label: Label = get_node(phase_label_path) as Label
@@ -33,6 +35,8 @@ class_name ShroudWorldScreen
 @onready var _tile_choice_button_1: Button = get_node(tile_choice_button_1_path) as Button
 @onready var _tile_choice_button_2: Button = get_node(tile_choice_button_2_path) as Button
 @onready var _tile_choice_buttons: Array[Button] = []
+@onready var _sprout_registry_overlay: Control = get_node(sprout_registry_overlay_path) as Control
+@onready var _sprout_registry_list: VBoxContainer = get_node(sprout_registry_list_path) as VBoxContainer
 
 const GRID_WIDTH: int = 7
 const GRID_HEIGHT: int = 5
@@ -49,11 +53,17 @@ var _selector_q: int = 0
 var _selector_r: int = 0
 
 var _tiles: Array = []
+var _overgrowth_age: Array = []
 var _decay_grid: Array = []
 var _decay_count: int = 0
 var _current_tile_id: String = ""
 var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
+
+var _sprouts: Array = []
+
+const TILE_ID_OVERGROWTH: String = "tile.special.overgrowth"
+const TILE_ID_GROVE: String = "tile.special.grove"
 
 var _tile_defs: Array = []
 var _tile_defs_by_id: Dictionary = {}
@@ -105,6 +115,9 @@ func _ready() -> void:
     if is_instance_valid(_hex_grid):
         _hex_grid.update()
     _selector.update()
+    if is_instance_valid(_sprout_registry_overlay):
+        _sprout_registry_overlay.visible = false
+    _update_sprout_registry_view()
     if Engine.has_singleton("RunContext"):
         var ctx := RunContext
         ctx.debug_print()
@@ -120,7 +133,17 @@ func _ready() -> void:
     print("ShroudWorld: ready")
 
 func _input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == Key.KEY_R:
+            _toggle_sprout_registry()
+            accept_event()
+            return
+
     if Input.is_action_just_pressed("ui_cancel"):
+        if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
+            _hide_sprout_registry()
+            accept_event()
+            return
         _go_back_to_main_menu()
         accept_event()
         return
@@ -171,11 +194,15 @@ func _input(event: InputEvent) -> void:
 
 func _init_tiles() -> void:
     _tiles.clear()
+    _overgrowth_age.clear()
     for r in GRID_HEIGHT:
         var row: Array = []
+        var age_row: Array = []
         for q in GRID_WIDTH:
             row.append("")
+            age_row.append(0)
         _tiles.append(row)
+        _overgrowth_age.append(age_row)
 
 func _init_decay_grid() -> void:
     _decay_grid.clear()
@@ -342,6 +369,89 @@ func _generate_resources_for_turn() -> void:
 
     _update_resource_label()
 
+func _advance_overgrowth_and_groves() -> void:
+    for r in GRID_HEIGHT:
+        for q in GRID_WIDTH:
+            var tile_id := str(_tiles[r][q])
+            if tile_id != TILE_ID_OVERGROWTH:
+                continue
+            _overgrowth_age[r][q] += 1
+            if _overgrowth_age[r][q] >= 3:
+                _transform_overgrowth_to_grove(q, r)
+
+func _transform_overgrowth_to_grove(q: int, r: int) -> void:
+    _tiles[r][q] = TILE_ID_GROVE
+    _overgrowth_age[r][q] = 0
+    print("ShroudWorld: Overgrowth at (%d, %d) transformed into Grove" % [q, r])
+    _spawn_sprout_from_grove(q, r)
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
+
+func _spawn_sprout_from_grove(q: int, r: int) -> void:
+    if not Engine.has_singleton("RunContext"):
+        print("ShroudWorld: cannot spawn sprout, RunContext not found")
+        return
+
+    var ctx := RunContext
+    if ctx.selected_sprout_ids.is_empty():
+        print("ShroudWorld: no selected sprouts in RunContext to spawn")
+        return
+
+    var idx := randi() % ctx.selected_sprout_ids.size()
+    var sprout_id: String = ctx.selected_sprout_ids[idx]
+    var sprout := {
+        "id": sprout_id,
+        "level": 1,
+        "q": q,
+        "r": r
+    }
+    _sprouts.append(sprout)
+    print("ShroudWorld: spawned sprout %s at (%d, %d)" % [sprout_id, q, r])
+    _update_sprout_registry_view()
+
+func _update_sprout_registry_view() -> void:
+    if not is_instance_valid(_sprout_registry_list):
+        return
+
+    for child in _sprout_registry_list.get_children():
+        child.queue_free()
+
+    if _sprouts.is_empty():
+        var empty_label := Label.new()
+        empty_label.text = "No sprouts yet."
+        _sprout_registry_list.add_child(empty_label)
+        return
+
+    for sprout in _sprouts:
+        var label := Label.new()
+        var sprout_id := str(sprout.get("id", ""))
+        var level := int(sprout.get("level", 1))
+        var q := int(sprout.get("q", -1))
+        var r := int(sprout.get("r", -1))
+        label.text = "%s (Lv %d) at (%d, %d)" % [sprout_id, level, q, r]
+        _sprout_registry_list.add_child(label)
+
+func _show_sprout_registry() -> void:
+    if not is_instance_valid(_sprout_registry_overlay):
+        return
+    _sprout_registry_overlay.visible = true
+    _update_sprout_registry_view()
+    print("ShroudWorld: Sprout registry opened")
+
+func _hide_sprout_registry() -> void:
+    if not is_instance_valid(_sprout_registry_overlay):
+        return
+    _sprout_registry_overlay.visible = false
+    print("ShroudWorld: Sprout registry closed")
+
+func _toggle_sprout_registry() -> void:
+    if not is_instance_valid(_sprout_registry_overlay):
+        return
+    if _sprout_registry_overlay.visible:
+        _hide_sprout_registry()
+    else:
+        _show_sprout_registry()
+
 func _end_turn() -> void:
     if _phase != PHASE_PLAYER:
         print("ShroudWorld: cannot end turn, not in Player phase")
@@ -353,6 +463,7 @@ func _end_turn() -> void:
 
     _generate_resources_for_turn()
     _spread_decay_for_turn()
+    _advance_overgrowth_and_groves()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
@@ -376,6 +487,7 @@ func _place_tile_at_selector() -> void:
         return
 
     _tiles[_selector_r][_selector_q] = _current_tile_id
+    _overgrowth_age[_selector_r][_selector_q] = 0
     _has_placed_this_turn = true
     print("ShroudWorld: placed %s at (%d, %d)" % [_current_tile_id, _selector_q, _selector_r])
     _tile_info_label.text = "Placed %s at (%d, %d)" % [_current_tile_name, _selector_q, _selector_r]
@@ -494,6 +606,7 @@ func _spread_decay_for_turn() -> void:
             if _tiles[r][q] != "":
                 print("ShroudWorld: decay overtook tile %s at (%d, %d)" % [_tiles[r][q], q, r])
                 _tiles[r][q] = ""
+                _overgrowth_age[r][q] = 0
 
     if not new_decay_positions.is_empty():
         print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
