@@ -197,7 +197,16 @@ func _continue_if_ready() -> void:
     if _totems.is_empty():
         return
     var current: Dictionary = _totems[_current_totem_index]
-    print("TotemSelect: CONTINUE with totem %s, difficulty %d" % [current.get("id", ""), _selected_difficulty])
+    var totem_id: String = str(current.get("id", ""))
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        ctx.selected_totem_id = totem_id
+        ctx.selected_difficulty = _selected_difficulty
+        ctx.selected_sprout_ids.clear()
+        ctx.debug_print()
+    else:
+        print("TotemSelect: WARNING - RunContext singleton not found")
+    print("TotemSelect: CONTINUE with totem %s, difficulty %d" % [totem_id, _selected_difficulty])
     get_tree().change_scene_to_file("res://scenes/run_setup/SproutSelect.tscn")
 
 func _go_back_to_main_menu() -> void:
