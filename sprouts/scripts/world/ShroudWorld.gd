@@ -100,6 +100,18 @@ func _ready() -> void:
     _update_selector_position()
     _hex_grid.update()
     _selector.update()
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        ctx.debug_print()
+        print(
+            "ShroudWorld: starting run with totem=%s difficulty=%d sprouts=%s" % [
+                ctx.selected_totem_id,
+                ctx.selected_difficulty,
+                ctx.selected_sprout_ids
+            ]
+        )
+    else:
+        print("ShroudWorld: WARNING - RunContext singleton not found")
     print("ShroudWorld: ready")
 
 func _input(event: InputEvent) -> void:

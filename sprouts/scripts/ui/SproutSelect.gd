@@ -182,6 +182,13 @@ func _continue_if_ready() -> void:
         _update_status_label()
         return
 
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
+        ctx.debug_print()
+    else:
+        print("SproutSelect: WARNING - RunContext singleton not found")
+
     print("SproutSelect: CONTINUE with sprouts: %s" % ", ".join(_selected_sprout_ids))
     get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
 
