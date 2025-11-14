@@ -8,10 +8,14 @@ anchors_preset = 0
 script = ExtResource("1_j4snc")
 tabs_container_path = NodePath("TabsContainer")
 card_grid_path = NodePath("CardGrid")
-back_button_path = NodePath("BackButton")
+back_button_path = NodePath("TabsContainer/BackButton")
 
 [node name="TabsContainer" type="HBoxContainer" parent="."]
 layout_mode = 0
+
+[node name="BackButton" type="Button" parent="TabsContainer"]
+layout_mode = 2
+text = "Back"
 
 [node name="TotemsTabButton" type="Button" parent="TabsContainer"]
 layout_mode = 2
@@ -28,7 +32,3 @@ text = "Tiles"
 [node name="CardGrid" type="GridContainer" parent="."]
 layout_mode = 0
 columns = 4
-
-[node name="BackButton" type="Button" parent="."]
-layout_mode = 2
-text = "Back"
