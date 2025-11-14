@@ -132,22 +132,23 @@ func _go_back_to_main_menu() -> void:
 	print("Collection: back to main menu")
 	get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_left"):
+func _input(event: InputEvent) -> void:
+	# Use the global Input singleton so we only react once per tap
+	if Input.is_action_just_pressed("ui_left"):
 		_change_tab(-1)
 		accept_event()
-	elif event.is_action_pressed("ui_right"):
+	elif Input.is_action_just_pressed("ui_right"):
 		_change_tab(1)
 		accept_event()
-	elif event.is_action_pressed("ui_up"):
+	elif Input.is_action_just_pressed("ui_up"):
 		_move_card_selection(-4)
 		accept_event()
-	elif event.is_action_pressed("ui_down"):
+	elif Input.is_action_just_pressed("ui_down"):
 		_move_card_selection(4)
 		accept_event()
-	elif event.is_action_pressed("ui_accept"):
+	elif Input.is_action_just_pressed("ui_accept"):
 		_activate_current_card()
 		accept_event()
-	elif event.is_action_pressed("ui_cancel"):
+	elif Input.is_action_just_pressed("ui_cancel"):
 		_go_back_to_main_menu()
 		accept_event()
