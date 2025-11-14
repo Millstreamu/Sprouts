@@ -1,0 +1,57 @@
+[
+  {
+    "id": "tile.nature.whispering_pine_forest",
+    "name": "Whispering Pine Forest",
+    "category": "Nature",
+    "base_output": {
+      "nature": 2,
+      "water": 0,
+      "earth": 0,
+      "souls": 0
+    }
+  },
+  {
+    "id": "tile.water.mirror_pool",
+    "name": "Mirror Pool",
+    "category": "Water",
+    "base_output": {
+      "nature": 0,
+      "water": 1,
+      "earth": 0,
+      "souls": 0
+    }
+  },
+  {
+    "id": "tile.earth.stone_vein",
+    "name": "Stone Vein",
+    "category": "Earth",
+    "base_output": {
+      "nature": 0,
+      "water": 0,
+      "earth": 1,
+      "souls": 0
+    }
+  },
+  {
+    "id": "tile.mystic.soul_bloom",
+    "name": "Soul Bloom",
+    "category": "Mystic",
+    "base_output": {
+      "nature": 0,
+      "water": 0,
+      "earth": 0,
+      "souls": 1
+    }
+  },
+  {
+    "id": "tile.aggression.thorn_watch",
+    "name": "Thorn Watch",
+    "category": "Aggression",
+    "base_output": {
+      "nature": 0,
+      "water": 0,
+      "earth": 0,
+      "souls": 0
+    }
+  }
+]
