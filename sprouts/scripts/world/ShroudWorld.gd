@@ -63,9 +63,13 @@ var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
 
 var _sprouts: Array = []
+var _next_sprout_instance_id: int = 0
 
 var _battle_overlay_active: bool = false
 var _battle_window: Control = null
+var _pending_battle_mode: String = ""
+var _pending_battle_target_q: int = -1
+var _pending_battle_target_r: int = -1
 
 # Cluster detection
 var _cluster_ids: Array = []
@@ -201,6 +205,12 @@ func _input(event: InputEvent) -> void:
         return
 
     if Input.is_action_just_pressed("ui_accept"):
+        if _selector_r >= 0 and _selector_r < GRID_HEIGHT and _selector_q >= 0 and _selector_q < GRID_WIDTH:
+            if _decay_grid[_selector_r][_selector_q]:
+                _start_decay_attack_battle(_selector_q, _selector_r)
+                accept_event()
+                return
+
         _place_tile_at_selector()
         accept_event()
         return
@@ -347,16 +357,26 @@ func _try_spawn_sprout_from_cluster(q: int, r: int, category: String, threshold:
 
     var idx := randi() % ctx.selected_sprout_ids.size()
     var sprout_id: String = ctx.selected_sprout_ids[idx]
+    var level: int = 1
+    var max_hp: int = 60 + level * 10
+    var current_hp: int = max_hp
 
     var sprout := {
+        "instance_id": _next_sprout_instance_id,
         "id": sprout_id,
-        "level": 1,
+        "level": level,
+        "max_hp": max_hp,
+        "current_hp": current_hp,
         "q": q,
-        "r": r
+        "r": r,
+        "dead": false
     }
+    _next_sprout_instance_id += 1
+
     _sprouts.append(sprout)
-    print("ShroudWorld: spawned sprout %s at (%d, %d) from cluster reward (threshold %d, category %s)" % [
+    print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d) from cluster reward (threshold %d, category %s)" % [
         sprout_id,
+        sprout.get("instance_id"),
         q,
         r,
         threshold,
@@ -649,14 +669,29 @@ func _spawn_sprout_from_grove(q: int, r: int) -> void:
 
     var idx := randi() % ctx.selected_sprout_ids.size()
     var sprout_id: String = ctx.selected_sprout_ids[idx]
+    var level: int = 1
+    var max_hp: int = 60 + level * 10
+    var current_hp: int = max_hp
+
     var sprout := {
+        "instance_id": _next_sprout_instance_id,
         "id": sprout_id,
-        "level": 1,
+        "level": level,
+        "max_hp": max_hp,
+        "current_hp": current_hp,
         "q": q,
-        "r": r
+        "r": r,
+        "dead": false
     }
+    _next_sprout_instance_id += 1
+
     _sprouts.append(sprout)
-    print("ShroudWorld: spawned sprout %s at (%d, %d)" % [sprout_id, q, r])
+    print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d)" % [
+        sprout_id,
+        sprout.get("instance_id"),
+        q,
+        r
+    ])
     _update_sprout_registry_view()
 
 func _update_sprout_registry_view() -> void:
@@ -678,7 +713,18 @@ func _update_sprout_registry_view() -> void:
         var level := int(sprout.get("level", 1))
         var q := int(sprout.get("q", -1))
         var r := int(sprout.get("r", -1))
-        label.text = "%s (Lv %d) at (%d, %d)" % [sprout_id, level, q, r]
+        var max_hp := int(sprout.get("max_hp", 0))
+        var current_hp := int(sprout.get("current_hp", 0))
+        var is_dead := bool(sprout.get("dead", false))
+        label.text = "%s (Lv %d) HP %d/%d at (%d, %d)%s" % [
+            sprout_id,
+            level,
+            current_hp,
+            max_hp,
+            q,
+            r,
+            is_dead ? " [DEAD]" : ""
+        ]
         _sprout_registry_list.add_child(label)
 
 func _show_sprout_registry() -> void:
@@ -889,15 +935,20 @@ func is_decay_at(q: int, r: int) -> bool:
 func _build_player_battle_team_from_sprouts() -> Array:
     var team: Array = []
     for sprout in _sprouts:
+        if bool(sprout.get("dead", false)):
+            continue
+
         var name := str(sprout.get("id", "Sprout"))
         var level := int(sprout.get("level", 1))
-        var max_hp := 60 + level * 10
+        var max_hp := int(sprout.get("max_hp", 60 + level * 10))
+        var current_hp := int(sprout.get("current_hp", max_hp))
         var attack := 10 + level * 2
         var cooldown := 3.0
         var unit := {
+            "instance_id": sprout.get("instance_id", -1),
             "name": name,
             "max_hp": max_hp,
-            "hp": max_hp,
+            "hp": current_hp,
             "attack": attack,
             "cooldown": cooldown,
             "cooldown_remaining": randf_range(0.0, cooldown),
@@ -911,6 +962,7 @@ func _build_dummy_enemy_battle_team() -> Array:
     for i in 3:
         var cooldown := 3.5
         var unit := {
+            "instance_id": -1,
             "name": "Smog_%d" % i,
             "max_hp": 70,
             "hp": 70,
@@ -921,6 +973,88 @@ func _build_dummy_enemy_battle_team() -> Array:
         }
         team.append(unit)
     return team
+
+func _can_attack_decay_at(q: int, r: int) -> bool:
+    if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
+        return false
+    if not _decay_grid[r][q]:
+        return false
+
+    var neighbors := [
+        Vector2i(q - 1, r),
+        Vector2i(q + 1, r),
+        Vector2i(q, r - 1),
+        Vector2i(q, r + 1)
+    ]
+
+    for neighbor in neighbors:
+        var nq := neighbor.x
+        var nr := neighbor.y
+        if nq < 0 or nq >= GRID_WIDTH or nr < 0 or nr >= GRID_HEIGHT:
+            continue
+        if _decay_grid[nr][nq]:
+            continue
+        if _tiles[nr][nq] != "":
+            return true
+
+    return false
+
+func _start_decay_attack_battle(q: int, r: int) -> void:
+    if _battle_overlay_active:
+        print("ShroudWorld: battle overlay already active")
+        return
+
+    if not is_instance_valid(_battle_overlay_layer):
+        print("ShroudWorld: battle overlay layer is not set")
+        return
+
+    if not _can_attack_decay_at(q, r):
+        print("ShroudWorld: cannot attack decay at (%d, %d)" % [q, r])
+        return
+
+    if not Engine.has_singleton("BattleContext"):
+        print("ShroudWorld: cannot start decay battle, BattleContext singleton not found")
+        return
+
+    var ctx := BattleContext
+    ctx.reset()
+
+    var player_team := _build_player_battle_team_from_sprouts()
+    if player_team.is_empty():
+        print("ShroudWorld: no living sprouts available to fight")
+        return
+
+    var enemy_team := _build_dummy_enemy_battle_team()
+
+    ctx.player_team = player_team
+    ctx.enemy_team = enemy_team
+    ctx.debug_print()
+
+    var scene := load("res://scenes/world/BattleWindow.tscn")
+    if scene == null or not (scene is PackedScene):
+        print("ShroudWorld: failed to load BattleWindow.tscn")
+        return
+
+    _pending_battle_mode = "decay_attack"
+    _pending_battle_target_q = q
+    _pending_battle_target_r = r
+
+    _battle_window = (scene as PackedScene).instantiate() as Control
+    if _battle_window == null:
+        print("ShroudWorld: failed to instance BattleWindow")
+        _pending_battle_mode = ""
+        _pending_battle_target_q = -1
+        _pending_battle_target_r = -1
+        return
+
+    _battle_overlay_layer.add_child(_battle_window)
+    _battle_overlay_layer.visible = true
+    _battle_overlay_active = true
+
+    if _battle_window.has_signal("battle_finished"):
+        (_battle_window as Node).connect("battle_finished", Callable(self, "_on_battle_finished"))
+
+    print("ShroudWorld: started decay attack battle at (%d, %d)" % [q, r])
 
 func _start_debug_battle() -> void:
     if _battle_overlay_active:
@@ -956,9 +1090,16 @@ func _start_debug_battle() -> void:
         print("ShroudWorld: failed to load BattleWindow.tscn")
         return
 
+    _pending_battle_mode = "debug"
+    _pending_battle_target_q = -1
+    _pending_battle_target_r = -1
+
     _battle_window = (scene as PackedScene).instantiate() as Control
     if _battle_window == null:
         print("ShroudWorld: failed to instance BattleWindow")
+        _pending_battle_mode = ""
+        _pending_battle_target_q = -1
+        _pending_battle_target_r = -1
         return
 
     _battle_overlay_layer.add_child(_battle_window)
@@ -979,6 +1120,26 @@ func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) 
     for unit in enemy_team:
         print("  E: ", unit)
 
+    for unit in player_team:
+        if not bool(unit.get("is_player", true)):
+            continue
+
+        var instance_id := int(unit.get("instance_id", -1))
+        if instance_id < 0:
+            continue
+
+        for sprout in _sprouts:
+            if int(sprout.get("instance_id", -1)) == instance_id:
+                var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
+                sprout["current_hp"] = new_hp
+                sprout["dead"] = new_hp <= 0
+                break
+
+    _update_sprout_registry_view()
+
+    if _pending_battle_mode == "decay_attack":
+        _apply_decay_attack_result(result)
+
     if is_instance_valid(_battle_window):
         _battle_window.queue_free()
         _battle_window = null
@@ -987,3 +1148,51 @@ func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) 
         _battle_overlay_layer.visible = false
 
     _battle_overlay_active = false
+    _pending_battle_mode = ""
+    _pending_battle_target_q = -1
+    _pending_battle_target_r = -1
+
+func _apply_decay_attack_result(result: String) -> void:
+    var q := _pending_battle_target_q
+    var r := _pending_battle_target_r
+
+    if q < 0 or r < 0 or q >= GRID_WIDTH or r >= GRID_HEIGHT:
+        print("ShroudWorld: no valid decay target stored for battle result")
+        return
+
+    if result == "victory":
+        if _decay_grid[r][q]:
+            _decay_grid[r][q] = false
+            _decay_count = max(_decay_count - 1, 0)
+            print("ShroudWorld: cleansed decay at (%d, %d) after victory" % [q, r])
+    elif result == "defeat":
+        var neighbors := [
+            Vector2i(q - 1, r),
+            Vector2i(q + 1, r),
+            Vector2i(q, r - 1),
+            Vector2i(q, r + 1)
+        ]
+        var candidates: Array = []
+        for neighbor in neighbors:
+            var nq := neighbor.x
+            var nr := neighbor.y
+            if nq < 0 or nq >= GRID_WIDTH or nr < 0 or nr >= GRID_HEIGHT:
+                continue
+            if _decay_grid[nr][nq]:
+                continue
+            if _tiles[nr][nq] != "":
+                candidates.append(neighbor)
+
+        if not candidates.is_empty():
+            var chosen: Vector2i = candidates[randi() % candidates.size()]
+            var cq := chosen.x
+            var cr := chosen.y
+            print("ShroudWorld: decay spreads to Life tile at (%d, %d) after defeat" % [cq, cr])
+            _tiles[cr][cq] = ""
+            _overgrowth_age[cr][cq] = 0
+            if not _decay_grid[cr][cq]:
+                _decay_grid[cr][cq] = true
+                _decay_count += 1
+
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
