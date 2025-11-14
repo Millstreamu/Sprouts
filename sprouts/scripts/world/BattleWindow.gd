@@ -1,5 +1,7 @@
 extends Control
 
+signal battle_finished(result: String, player_team: Array, enemy_team: Array)
+
 const MAX_COLUMNS_PER_ROW: int = 2
 
 @export var player_row0_path: NodePath
@@ -34,6 +36,7 @@ var _player_units: Array = []
 var _enemy_units: Array = []
 var _battle_active: bool = false
 var _battle_result: String = ""
+var _battle_finished_emitted: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -44,6 +47,7 @@ func _ready() -> void:
     _build_unit_ui()
     _battle_active = true
     _battle_result = ""
+    _battle_finished_emitted = false
     _battle_status_label.text = "Battle in progress..."
     print("BattleWindow: ready, player=%d, enemy=%d" % [_player_units.size(), _enemy_units.size()])
 
@@ -56,15 +60,20 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
     if Input.is_action_just_pressed("ui_cancel"):
-        print("BattleWindow: aborting battle, returning to ShroudWorld")
-        get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
+        if _battle_active:
+            _battle_active = false
+            _battle_result = "aborted"
+            _result_label.text = "Aborted"
+            _battle_status_label.text = "Battle aborted"
+            _result_overlay.visible = true
+            print("BattleWindow: battle aborted by player")
+        _emit_battle_finished()
         accept_event()
         return
 
     if Input.is_action_just_pressed("ui_accept"):
         if not _battle_active:
-            print("BattleWindow: battle finished, returning to ShroudWorld")
-            get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
+            _emit_battle_finished()
             accept_event()
             return
 
@@ -221,3 +230,37 @@ func _check_battle_end() -> void:
     _battle_status_label.text = "Battle ended: %s" % _battle_result.capitalize()
     _result_overlay.visible = true
     print("BattleWindow: battle ended with result = ", _battle_result)
+
+func _emit_battle_finished() -> void:
+    if _battle_finished_emitted:
+        return
+    _battle_finished_emitted = true
+
+    var cleaned_player: Array = []
+    for unit in _player_units:
+        var copy := {
+            "name": str(unit.get("name", "")),
+            "max_hp": int(unit.get("max_hp", 0)),
+            "hp": int(unit.get("hp", 0)),
+            "attack": int(unit.get("attack", 0)),
+            "cooldown": float(unit.get("cooldown", 0.0)),
+            "cooldown_remaining": float(unit.get("cooldown_remaining", 0.0)),
+            "is_player": bool(unit.get("is_player", true))
+        }
+        cleaned_player.append(copy)
+
+    var cleaned_enemy: Array = []
+    for unit in _enemy_units:
+        var copy := {
+            "name": str(unit.get("name", "")),
+            "max_hp": int(unit.get("max_hp", 0)),
+            "hp": int(unit.get("hp", 0)),
+            "attack": int(unit.get("attack", 0)),
+            "cooldown": float(unit.get("cooldown", 0.0)),
+            "cooldown_remaining": float(unit.get("cooldown_remaining", 0.0)),
+            "is_player": bool(unit.get("is_player", false))
+        }
+        cleaned_enemy.append(copy)
+
+    print("BattleWindow: emitting battle_finished with result=", _battle_result)
+    battle_finished.emit(_battle_result, cleaned_player, cleaned_enemy)

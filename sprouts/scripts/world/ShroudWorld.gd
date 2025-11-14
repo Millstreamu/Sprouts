@@ -18,6 +18,7 @@ class_name ShroudWorldScreen
 @export var tile_choice_button_2_path: NodePath
 @export var sprout_registry_overlay_path: NodePath
 @export var sprout_registry_list_path: NodePath
+@export var battle_overlay_layer_path: NodePath
 
 @onready var _turn_label: Label = get_node(turn_label_path) as Label
 @onready var _phase_label: Label = get_node(phase_label_path) as Label
@@ -37,6 +38,7 @@ class_name ShroudWorldScreen
 @onready var _tile_choice_buttons: Array[Button] = []
 @onready var _sprout_registry_overlay: Control = get_node(sprout_registry_overlay_path) as Control
 @onready var _sprout_registry_list: VBoxContainer = get_node(sprout_registry_list_path) as VBoxContainer
+@onready var _battle_overlay_layer: Control = get_node(battle_overlay_layer_path) as Control
 
 const GRID_WIDTH: int = 7
 const GRID_HEIGHT: int = 5
@@ -61,6 +63,9 @@ var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
 
 var _sprouts: Array = []
+
+var _battle_overlay_active: bool = false
+var _battle_window: Control = null
 
 # Cluster detection
 var _cluster_ids: Array = []
@@ -130,6 +135,8 @@ func _ready() -> void:
     if is_instance_valid(_sprout_registry_overlay):
         _sprout_registry_overlay.visible = false
     _update_sprout_registry_view()
+    if is_instance_valid(_battle_overlay_layer):
+        _battle_overlay_layer.visible = false
     if Engine.has_singleton("RunContext"):
         var ctx := RunContext
         ctx.debug_print()
@@ -145,6 +152,9 @@ func _ready() -> void:
     print("ShroudWorld: ready")
 
 func _input(event: InputEvent) -> void:
+    if _battle_overlay_active:
+        return
+
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == Key.KEY_R:
             _toggle_sprout_registry()
@@ -913,6 +923,14 @@ func _build_dummy_enemy_battle_team() -> Array:
     return team
 
 func _start_debug_battle() -> void:
+    if _battle_overlay_active:
+        print("ShroudWorld: battle overlay already active")
+        return
+
+    if not is_instance_valid(_battle_overlay_layer):
+        print("ShroudWorld: battle overlay layer is not set")
+        return
+
     if not Engine.has_singleton("BattleContext"):
         print("ShroudWorld: cannot start battle, BattleContext singleton not found")
         return
@@ -933,5 +951,39 @@ func _start_debug_battle() -> void:
     ctx.enemy_team = enemy_team
     ctx.debug_print()
 
-    print("ShroudWorld: starting debug battle")
-    get_tree().change_scene_to_file("res://scenes/world/BattleWindow.tscn")
+    var scene := load("res://scenes/world/BattleWindow.tscn")
+    if scene == null or not (scene is PackedScene):
+        print("ShroudWorld: failed to load BattleWindow.tscn")
+        return
+
+    _battle_window = (scene as PackedScene).instantiate() as Control
+    if _battle_window == null:
+        print("ShroudWorld: failed to instance BattleWindow")
+        return
+
+    _battle_overlay_layer.add_child(_battle_window)
+    _battle_overlay_layer.visible = true
+    _battle_overlay_active = true
+
+    if _battle_window.has_signal("battle_finished"):
+        (_battle_window as Node).connect("battle_finished", Callable(self, "_on_battle_finished"))
+
+    print("ShroudWorld: started debug battle overlay")
+
+func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) -> void:
+    print("ShroudWorld: battle finished with result = %s" % result)
+    print("ShroudWorld: player team final state:")
+    for unit in player_team:
+        print("  P: ", unit)
+    print("ShroudWorld: enemy team final state:")
+    for unit in enemy_team:
+        print("  E: ", unit)
+
+    if is_instance_valid(_battle_window):
+        _battle_window.queue_free()
+        _battle_window = null
+
+    if is_instance_valid(_battle_overlay_layer):
+        _battle_overlay_layer.visible = false
+
+    _battle_overlay_active = false
