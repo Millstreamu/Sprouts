@@ -183,7 +183,7 @@ func _continue_if_ready() -> void:
         return
 
     print("SproutSelect: CONTINUE with sprouts: %s" % ", ".join(_selected_sprout_ids))
-    # TODO: Replace with world scene transition when implemented
+    get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
 
 func _go_back_to_totem_select() -> void:
     print("SproutSelect: back to TotemSelect")
