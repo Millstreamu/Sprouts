@@ -1,0 +1,87 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/SproutSelect.gd" id="1_6v1su"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CardBase.tscn" id="2_i8eym"]
+
+[node name="SproutSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_6v1su")
+scroll_container_path = NodePath("Scroll")
+sprout_grid_path = NodePath("Scroll/SproutGrid")
+selected_list_path = NodePath("SelectedList")
+back_button_path = NodePath("BottomBar/BackButton")
+continue_button_path = NodePath("BottomBar/ContinueButton")
+status_label_path = NodePath("StatusLabel")
+card_scene = ExtResource("2_i8eym")
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = -24.0
+text = "Select 3 Sprouts"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 0.75
+anchor_bottom = 0.75
+offset_left = 24.0
+offset_top = 64.0
+offset_right = -24.0
+offset_bottom = -96.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="SproutGrid" type="GridContainer" parent="Scroll"]
+layout_mode = 2
+columns = 4
+
+[node name="SelectedList" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+offset_left = 24.0
+offset_top = 320.0
+offset_right = 344.0
+offset_bottom = 480.0
+
+[node name="SelectedLabel" type="Label" parent="SelectedList"]
+text = "Selected Sprouts:"
+
+[node name="BottomBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -64.0
+offset_right = -24.0
+offset_bottom = -16.0
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="ContinueButton" type="Button" parent="BottomBar"]
+text = "Continue"
+
+[node name="BackButton" type="Button" parent="BottomBar"]
+text = "Back"
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -112.0
+offset_right = -24.0
+offset_bottom = -80.0
+text = "Select 3 sprouts"
+horizontal_alignment = 1
