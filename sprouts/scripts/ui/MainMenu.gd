@@ -99,8 +99,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_start_run() -> void:
-        print("MainMenu: Start Run selected")
-        get_tree().change_scene_to_file("res://scenes/run_setup/TotemSelect.tscn")
+		print("MainMenu: Start Run selected")
+		get_tree().change_scene_to_file("res://scenes/run_setup/TotemSelect.tscn")
 
 func _on_collection() -> void:
 	print("MainMenu: Collection selected")
