@@ -20,6 +20,7 @@ const TAB_TILES: int = 2
 var _current_tab_index: int = TAB_TOTEMS
 var _selected_card_index: int = 0
 var _cards: Array[Control] = []
+var _in_tab_mode: bool = true
 
 var _dummy_totems: Array = [
 	{"id": "totem.heartseed", "name": "Heartseed Totem", "unlocked": true},
@@ -43,12 +44,27 @@ var _dummy_tiles: Array = [
 ]
 
 func _ready() -> void:
-	_tab_buttons = _collect_tab_buttons()
-	_back_button.pressed.connect(_go_back_to_main_menu)
-	_current_tab_index = TAB_TOTEMS
-	_refresh_tab_visuals()
-	_populate_cards_for_current_tab()
-	print("Collection: ready")
+        _in_tab_mode = true
+        _tab_buttons = _collect_tab_buttons()
+        _back_button.pressed.connect(_go_back_to_main_menu)
+        _current_tab_index = TAB_TOTEMS
+        _refresh_tab_visuals()
+        _populate_cards_for_current_tab()
+        print("Collection: ready")
+
+func _enter_tab_mode() -> void:
+        _in_tab_mode = true
+        _selected_card_index = 0
+        _refresh_tab_visuals()
+        print("Collection: entered TAB mode")
+
+func _enter_card_mode() -> void:
+        if _cards.is_empty():
+                return
+        _in_tab_mode = false
+        _selected_card_index = 0
+        _update_card_selection()
+        print("Collection: entered CARD mode")
 
 func _collect_tab_buttons() -> Array[Button]:
 	var buttons: Array[Button] = []
@@ -58,10 +74,13 @@ func _collect_tab_buttons() -> Array[Button]:
 	return buttons
 
 func _refresh_tab_visuals() -> void:
-	for i in _tab_buttons.size():
-		var button: Button = _tab_buttons[i]
-		if i == _current_tab_index:
-			button.grab_focus()
+        if _tab_buttons.is_empty():
+                return
+
+        for i in _tab_buttons.size():
+                var button: Button = _tab_buttons[i]
+                if _in_tab_mode and i == _current_tab_index:
+                        button.grab_focus()
 
 func _get_current_tab_data() -> Array:
 	if _current_tab_index == TAB_TOTEMS:
@@ -133,22 +152,37 @@ func _go_back_to_main_menu() -> void:
 	get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
 
 func _input(event: InputEvent) -> void:
-	# Use the global Input singleton so we only react once per tap
-	if Input.is_action_just_pressed("ui_left"):
-		_change_tab(-1)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_right"):
-		_change_tab(1)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_up"):
-		_move_card_selection(-4)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_down"):
-		_move_card_selection(4)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_accept"):
-		_activate_current_card()
-		accept_event()
-	elif Input.is_action_just_pressed("ui_cancel"):
-		_go_back_to_main_menu()
-		accept_event()
+        if Input.is_action_just_pressed("ui_cancel"):
+                if _in_tab_mode:
+                        _go_back_to_main_menu()
+                else:
+                        _enter_tab_mode()
+                accept_event()
+                return
+
+        if _in_tab_mode:
+                if Input.is_action_just_pressed("ui_left"):
+                        _change_tab(-1)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_right"):
+                        _change_tab(1)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_accept"):
+                        _enter_card_mode()
+                        accept_event()
+        else:
+                if Input.is_action_just_pressed("ui_left"):
+                        _move_card_selection(-1)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_right"):
+                        _move_card_selection(1)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_up"):
+                        _move_card_selection(-4)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_down"):
+                        _move_card_selection(4)
+                        accept_event()
+                elif Input.is_action_just_pressed("ui_accept"):
+                        _activate_current_card()
+                        accept_event()
