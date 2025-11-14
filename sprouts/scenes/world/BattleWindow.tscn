@@ -1,0 +1,122 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/BattleWindow.gd" id="1_l5a8o"]
+
+[node name="BattleWindow" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_l5a8o")
+player_row0_path = NodePath("RootMargin/MainHBox/PlayerColumn/PlayerRow0")
+player_row1_path = NodePath("RootMargin/MainHBox/PlayerColumn/PlayerRow1")
+player_row2_path = NodePath("RootMargin/MainHBox/PlayerColumn/PlayerRow2")
+enemy_row0_path = NodePath("RootMargin/MainHBox/EnemyColumn/EnemyRow0")
+enemy_row1_path = NodePath("RootMargin/MainHBox/EnemyColumn/EnemyRow1")
+enemy_row2_path = NodePath("RootMargin/MainHBox/EnemyColumn/EnemyRow2")
+battle_status_label_path = NodePath("RootMargin/MainHBox/CenterColumn/BattleStatusLabel")
+hint_label_path = NodePath("RootMargin/MainHBox/CenterColumn/HintLabel")
+result_overlay_path = NodePath("ResultOverlay")
+result_label_path = NodePath("ResultOverlay/ResultLabel")
+
+[node name="RootMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MainHBox" type="HBoxContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="PlayerColumn" type="VBoxContainer" parent="RootMargin/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="PlayerTitleLabel" type="Label" parent="RootMargin/MainHBox/PlayerColumn"]
+layout_mode = 2
+text = "Sprouts"
+
+[node name="PlayerRow0" type="HBoxContainer" parent="RootMargin/MainHBox/PlayerColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PlayerRow1" type="HBoxContainer" parent="RootMargin/MainHBox/PlayerColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PlayerRow2" type="HBoxContainer" parent="RootMargin/MainHBox/PlayerColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CenterColumn" type="VBoxContainer" parent="RootMargin/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="BattleStatusLabel" type="Label" parent="RootMargin/MainHBox/CenterColumn"]
+layout_mode = 2
+text = "Battle in progress..."
+
+[node name="HintLabel" type="Label" parent="RootMargin/MainHBox/CenterColumn"]
+layout_mode = 2
+text = "Space: Continue | Esc: Abort"
+
+[node name="EnemyColumn" type="VBoxContainer" parent="RootMargin/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="EnemyTitleLabel" type="Label" parent="RootMargin/MainHBox/EnemyColumn"]
+layout_mode = 2
+text = "Smogs"
+
+[node name="EnemyRow0" type="HBoxContainer" parent="RootMargin/MainHBox/EnemyColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EnemyRow1" type="HBoxContainer" parent="RootMargin/MainHBox/EnemyColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EnemyRow2" type="HBoxContainer" parent="RootMargin/MainHBox/EnemyColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ResultOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.623529)
+visible = false
+
+[node name="ResultLabel" type="Label" parent="ResultOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Victory"
+
