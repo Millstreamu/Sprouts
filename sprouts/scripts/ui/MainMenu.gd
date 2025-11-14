@@ -17,7 +17,6 @@ func _ready() -> void:
         _buttons = _collect_ordered_buttons()
         if _buttons.size() != 5:
             print("MainMenu: warning - expected 5 buttons but found %d" % _buttons.size())
-        _setup_button_signals()
     _selected_index = 0
     _update_selection()
     print("MainMenu: ready")
@@ -44,26 +43,6 @@ func _collect_ordered_buttons() -> Array[Button]:
         if button:
             result.append(button)
     return result
-
-func _setup_button_signals() -> void:
-    for index in range(_buttons.size()):
-        var button: Button = _buttons[index]
-        if button == null:
-            continue
-        var focus_index: int = index
-        button.focus_entered.connect(func() -> void:
-            _on_button_focus_entered(focus_index)
-        )
-        button.pressed.connect(func() -> void:
-            _on_button_pressed(focus_index)
-        )
-
-func _on_button_focus_entered(index: int) -> void:
-    _selected_index = index
-
-func _on_button_pressed(index: int) -> void:
-    _selected_index = index
-    _activate_selection()
 
 func _update_selection() -> void:
     if _buttons.is_empty():
@@ -98,13 +77,10 @@ func _activate_selection() -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if event.is_action_pressed("ui_up"):
         _move_selection(-1)
-        accept_event()
-    elif event.is_action_pressed("ui_down"):
+    if event.is_action_pressed("ui_down"):
         _move_selection(1)
-        accept_event()
-    elif event.is_action_pressed("ui_accept"):
+    if event.is_action_pressed("ui_accept"):
         _activate_selection()
-        accept_event()
 
 func _on_start_run() -> void:
     print("MainMenu: Start Run selected")
