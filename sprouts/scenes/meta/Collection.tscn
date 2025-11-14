@@ -1,21 +1,19 @@
-[gd_scene load_steps=2 format=3 uid="uid://d3dwmlru6d24h"]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" uid="uid://ct1lyy1do1r1k" path="res://scripts/ui/Collection.gd" id="1_j4snc"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CardBase.tscn" id="2_m1h0k"]
 
 [node name="Collection" type="Control"]
 layout_mode = 3
-anchors_preset = 0
 script = ExtResource("1_j4snc")
 tabs_container_path = NodePath("TabsContainer")
-card_grid_path = NodePath("CardGrid")
-back_button_path = NodePath("TabsContainer/BackButton")
+scroll_container_path = NodePath("Scroll")
+card_grid_path = NodePath("Scroll/CardGrid")
+back_button_path = NodePath("BackButton")
+card_scene = ExtResource("2_m1h0k")
 
 [node name="TabsContainer" type="HBoxContainer" parent="."]
-layout_mode = 0
-
-[node name="BackButton" type="Button" parent="TabsContainer"]
 layout_mode = 2
-text = "Back"
 
 [node name="TotemsTabButton" type="Button" parent="TabsContainer"]
 layout_mode = 2
@@ -29,6 +27,14 @@ text = "Sprouts"
 layout_mode = 2
 text = "Tiles"
 
-[node name="CardGrid" type="GridContainer" parent="."]
-layout_mode = 0
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardGrid" type="GridContainer" parent="Scroll"]
+layout_mode = 2
 columns = 4
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 2
+text = "Back"
