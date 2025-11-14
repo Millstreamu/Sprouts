@@ -21,6 +21,12 @@ tile_info_label_path = NodePath("TilePanel/TileInfoLabel")
 resource_label_path = NodePath("ResourcePanel/ResourceLabel")
 end_turn_hint_label_path = NodePath("ResourcePanel/EndTurnHintLabel")
 back_button_path = NodePath("BackButton")
+commune_overlay_path = NodePath("CommuneOverlay")
+commune_title_label_path = NodePath("CommuneOverlay/CommunePanel/CommuneTitleLabel")
+commune_hint_label_path = NodePath("CommuneOverlay/CommunePanel/CommuneHintLabel")
+tile_choice_button_0_path = NodePath("CommuneOverlay/CommunePanel/TileChoiceContainer/TileChoiceButton0")
+tile_choice_button_1_path = NodePath("CommuneOverlay/CommunePanel/TileChoiceContainer/TileChoiceButton1")
+tile_choice_button_2_path = NodePath("CommuneOverlay/CommunePanel/TileChoiceContainer/TileChoiceButton2")
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -101,3 +107,55 @@ offset_top = 80.0
 offset_right = 124.0
 offset_bottom = 120.0
 text = "Back"
+
+[node name="CommuneOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="CommuneOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="CommunePanel" type="VBoxContainer" parent="CommuneOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+
+[node name="CommuneTitleLabel" type="Label" parent="CommuneOverlay/CommunePanel"]
+text = "Commune – Choose a Tile"
+horizontal_alignment = 1
+
+[node name="TileChoiceContainer" type="HBoxContainer" parent="CommuneOverlay/CommunePanel"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="TileChoiceButton0" type="Button" parent="CommuneOverlay/CommunePanel/TileChoiceContainer"]
+size_flags_horizontal = 3
+
+[node name="TileChoiceButton1" type="Button" parent="CommuneOverlay/CommunePanel/TileChoiceContainer"]
+size_flags_horizontal = 3
+
+[node name="TileChoiceButton2" type="Button" parent="CommuneOverlay/CommunePanel/TileChoiceContainer"]
+size_flags_horizontal = 3
+
+[node name="CommuneHintLabel" type="Label" parent="CommuneOverlay/CommunePanel"]
+text = "Use Left/Right or 1/2/3, Space to select"
+horizontal_alignment = 1
