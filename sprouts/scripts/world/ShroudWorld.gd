@@ -66,6 +66,9 @@ var _sprouts: Array = []
 var _cluster_ids: Array = []
 var _clusters: Dictionary = {}
 var _next_cluster_id: int = 0
+const CLUSTER_THRESHOLDS: Array[int] = [3, 6, 12, 24]
+# cluster_id -> highest threshold already rewarded for that cluster
+var _cluster_rewards: Dictionary = {}
 
 const TILE_ID_OVERGROWTH: String = "tile.special.overgrowth"
 const TILE_ID_GROVE: String = "tile.special.grove"
@@ -100,6 +103,7 @@ func _ready() -> void:
     _init_tiles()
     _init_decay_grid()
     _load_tile_defs()
+    _cluster_rewards.clear()
     _turn_number = 1
     _phase = PHASE_COMMUNE
     _current_phase = "Commune"
@@ -112,6 +116,7 @@ func _ready() -> void:
     _res_souls = 0
     _spawn_initial_decay_sources()
     _recompute_clusters()
+    _apply_cluster_threshold_rewards()
     _update_turn_and_phase_labels()
     _update_tile_panel()
     _update_resource_label()
@@ -252,6 +257,99 @@ func _recompute_clusters() -> void:
             _flood_fill_cluster(q, r, category)
 
     print("ShroudWorld: recomputed clusters; total clusters = %d" % _clusters.size())
+
+func _apply_cluster_threshold_rewards() -> void:
+    if _cluster_rewards == null:
+        _cluster_rewards = {}
+
+    for cluster_id in _clusters.keys():
+        var c := _clusters[cluster_id]
+        var category := str(c.get("category", ""))
+        if category != "Nature" and category != "Water" and category != "Earth":
+            continue
+
+        var size := int(c.get("size", 0))
+        if size <= 0:
+            continue
+
+        var old_threshold: int = -1
+        if _cluster_rewards.has(cluster_id):
+            old_threshold = int(_cluster_rewards[cluster_id])
+
+        for threshold in CLUSTER_THRESHOLDS:
+            if size >= threshold and threshold > old_threshold:
+                _grant_cluster_reward(cluster_id, c, category, threshold)
+                _cluster_rewards[cluster_id] = threshold
+
+func _grant_cluster_reward(cluster_id: int, cluster_data: Dictionary, category: String, threshold: int) -> void:
+    var tiles: Array = cluster_data.get("tiles", [])
+    if tiles.is_empty():
+        return
+
+    var idx := randi() % tiles.size()
+    var pos: Vector2i = tiles[idx]
+    var q := pos.x
+    var r := pos.y
+
+    print("ShroudWorld: cluster %d (category=%s, size=%d) reached threshold %d at (%d, %d)" % [
+        cluster_id,
+        category,
+        int(cluster_data.get("size", 0)),
+        threshold,
+        q,
+        r
+    ])
+
+    var spawned: bool = _try_spawn_sprout_from_cluster(q, r, category, threshold)
+    if not spawned:
+        var souls_amount := _get_cluster_soul_reward(category, threshold)
+        _res_souls += souls_amount
+        _update_resource_label()
+        print("ShroudWorld: granted %d Soul Seeds from cluster %d" % [souls_amount, cluster_id])
+
+func _get_cluster_soul_reward(category: String, threshold: int) -> int:
+    match threshold:
+        3:
+            return 1
+        6:
+            return 2
+        12:
+            return 4
+        24:
+            return 8
+        _:
+            return 1
+
+func _try_spawn_sprout_from_cluster(q: int, r: int, category: String, threshold: int) -> bool:
+    if not Engine.has_singleton("RunContext"):
+        print("ShroudWorld: cannot spawn sprout from cluster, RunContext not found")
+        return false
+
+    var ctx := RunContext
+    if ctx.selected_sprout_ids.is_empty():
+        print("ShroudWorld: no selected sprouts in RunContext to spawn (cluster reward)")
+        return false
+
+    var idx := randi() % ctx.selected_sprout_ids.size()
+    var sprout_id: String = ctx.selected_sprout_ids[idx]
+
+    var sprout := {
+        "id": sprout_id,
+        "level": 1,
+        "q": q,
+        "r": r
+    }
+    _sprouts.append(sprout)
+    print("ShroudWorld: spawned sprout %s at (%d, %d) from cluster reward (threshold %d, category %s)" % [
+        sprout_id,
+        q,
+        r,
+        threshold,
+        category
+    ])
+
+    _update_sprout_registry_view()
+    return true
 
 func _flood_fill_cluster(start_q: int, start_r: int, category: String) -> void:
     var cluster_id := _next_cluster_id
@@ -602,6 +700,7 @@ func _end_turn() -> void:
     _spread_decay_for_turn()
     _advance_overgrowth_and_groves()
     _recompute_clusters()
+    _apply_cluster_threshold_rewards()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
