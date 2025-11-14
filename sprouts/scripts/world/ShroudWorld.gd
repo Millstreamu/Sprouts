@@ -62,6 +62,11 @@ var _has_placed_this_turn: bool = false
 
 var _sprouts: Array = []
 
+# Cluster detection
+var _cluster_ids: Array = []
+var _clusters: Dictionary = {}
+var _next_cluster_id: int = 0
+
 const TILE_ID_OVERGROWTH: String = "tile.special.overgrowth"
 const TILE_ID_GROVE: String = "tile.special.grove"
 
@@ -106,12 +111,14 @@ func _ready() -> void:
     _res_earth = 0
     _res_souls = 0
     _spawn_initial_decay_sources()
+    _recompute_clusters()
     _update_turn_and_phase_labels()
     _update_tile_panel()
     _update_resource_label()
     _end_turn_hint_label.text = "RL - Next Turn (Press V)"
     _show_commune()
     _update_selector_position()
+    _update_tile_info_for_selector()
     if is_instance_valid(_hex_grid):
         _hex_grid.update()
     _selector.update()
@@ -136,6 +143,11 @@ func _input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == Key.KEY_R:
             _toggle_sprout_registry()
+            accept_event()
+            return
+
+        if event.keycode == Key.KEY_C:
+            _debug_print_clusters()
             accept_event()
             return
 
@@ -195,14 +207,142 @@ func _input(event: InputEvent) -> void:
 func _init_tiles() -> void:
     _tiles.clear()
     _overgrowth_age.clear()
+    _cluster_ids.clear()
     for r in GRID_HEIGHT:
         var row: Array = []
         var age_row: Array = []
+        var cluster_row: Array = []
         for q in GRID_WIDTH:
             row.append("")
             age_row.append(0)
+            cluster_row.append(-1)
         _tiles.append(row)
         _overgrowth_age.append(age_row)
+        _cluster_ids.append(cluster_row)
+
+func _get_tile_category(tile_id: String) -> String:
+    if tile_id.is_empty():
+        return ""
+    if not _tile_defs_by_id.has(tile_id):
+        return ""
+    var def := _tile_defs_by_id[tile_id]
+    return str(def.get("category", ""))
+
+func _recompute_clusters() -> void:
+    _clusters.clear()
+    _next_cluster_id = 0
+
+    for r in GRID_HEIGHT:
+        for q in GRID_WIDTH:
+            _cluster_ids[r][q] = -1
+
+    for r in GRID_HEIGHT:
+        for q in GRID_WIDTH:
+            var tile_id := str(_tiles[r][q])
+            if tile_id == "":
+                continue
+
+            var category := _get_tile_category(tile_id)
+            if category != "Nature" and category != "Water" and category != "Earth":
+                continue
+
+            if _cluster_ids[r][q] != -1:
+                continue
+
+            _flood_fill_cluster(q, r, category)
+
+    print("ShroudWorld: recomputed clusters; total clusters = %d" % _clusters.size())
+
+func _flood_fill_cluster(start_q: int, start_r: int, category: String) -> void:
+    var cluster_id := _next_cluster_id
+    _next_cluster_id += 1
+
+    var tiles: Array = []
+    var open_list: Array = []
+    open_list.append(Vector2i(start_q, start_r))
+
+    while not open_list.is_empty():
+        var v: Vector2i = open_list.pop_back()
+        var q := v.x
+        var r := v.y
+
+        if r < 0 or r >= GRID_HEIGHT:
+            continue
+        if q < 0 or q >= GRID_WIDTH:
+            continue
+        if _cluster_ids[r][q] != -1:
+            continue
+
+        var tile_id := str(_tiles[r][q])
+        if tile_id == "":
+            continue
+        var tile_category := _get_tile_category(tile_id)
+        if tile_category != category:
+            continue
+
+        _cluster_ids[r][q] = cluster_id
+        tiles.append(v)
+
+        var neighbors := [
+            Vector2i(q - 1, r),
+            Vector2i(q + 1, r),
+            Vector2i(q, r - 1),
+            Vector2i(q, r + 1)
+        ]
+        for n in neighbors:
+            if n.x >= 0 and n.x < GRID_WIDTH and n.y >= 0 and n.y < GRID_HEIGHT:
+                if _cluster_ids[n.y][n.x] == -1:
+                    open_list.append(n)
+
+    var cluster_data := {
+        "category": category,
+        "tiles": tiles,
+        "size": tiles.size()
+    }
+    _clusters[cluster_id] = cluster_data
+
+func _get_current_tile_selection_text() -> String:
+    if _current_tile_id.is_empty():
+        return "Current Tile: None"
+    return "Current Tile: %s" % _current_tile_name
+
+func _update_tile_info_for_selector() -> void:
+    var selection_text := _get_current_tile_selection_text()
+    var q := _selector_q
+    var r := _selector_r
+
+    if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
+        _tile_info_label.text = "%s\nTile: None" % selection_text
+        return
+
+    var tile_id := str(_tiles[r][q])
+    if tile_id == "":
+        _tile_info_label.text = "%s\nTile: None" % selection_text
+        return
+
+    var tile_name := tile_id
+    if _tile_defs_by_id.has(tile_id):
+        var def := _tile_defs_by_id[tile_id]
+        tile_name = str(def.get("name", tile_id))
+
+    var info_text := "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
+
+    var cluster_id := _cluster_ids[r][q]
+    if cluster_id != -1 and _clusters.has(cluster_id):
+        var c := _clusters[cluster_id]
+        var cat := str(c.get("category", ""))
+        var size := int(c.get("size", 0))
+        info_text += " | Cluster: %s size %d" % [cat, size]
+
+    _tile_info_label.text = info_text
+
+func _debug_print_clusters() -> void:
+    print("ShroudWorld: debug clusters, count = %d" % _clusters.size())
+    for cluster_id in _clusters.keys():
+        var c := _clusters[cluster_id]
+        var cat := str(c.get("category", ""))
+        var size := int(c.get("size", 0))
+        print("  Cluster %d: category=%s size=%d" % [cluster_id, cat, size])
 
 func _init_decay_grid() -> void:
     _decay_grid.clear()
@@ -321,10 +461,7 @@ func _update_turn_and_phase_labels() -> void:
     _phase_label.text = "Phase: %s" % phase_name
 
 func _update_tile_panel() -> void:
-    if _current_tile_id.is_empty():
-        _tile_info_label.text = "Current Tile: None"
-    else:
-        _tile_info_label.text = "Current Tile: %s" % _current_tile_name
+    _update_tile_info_for_selector()
 
 func _update_resource_label() -> void:
     _resource_label.text = "Nature: %d | Water: %d | Earth: %d | Souls: %d" % [
@@ -464,6 +601,7 @@ func _end_turn() -> void:
     _generate_resources_for_turn()
     _spread_decay_for_turn()
     _advance_overgrowth_and_groves()
+    _recompute_clusters()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
@@ -490,10 +628,11 @@ func _place_tile_at_selector() -> void:
     _overgrowth_age[_selector_r][_selector_q] = 0
     _has_placed_this_turn = true
     print("ShroudWorld: placed %s at (%d, %d)" % [_current_tile_id, _selector_q, _selector_r])
-    _tile_info_label.text = "Placed %s at (%d, %d)" % [_current_tile_name, _selector_q, _selector_r]
     _current_tile_id = ""
     _current_tile_name = ""
     _update_tile_panel()
+    _recompute_clusters()
+    _update_tile_info_for_selector()
     if is_instance_valid(_hex_grid):
         _hex_grid.update()
 
@@ -503,6 +642,7 @@ func _move_selector(dq: int, dr: int) -> void:
     _clamp_selector()
     _update_selector_position()
     print("ShroudWorld: selector at (%d, %d)" % [_selector_q, _selector_r])
+    _update_tile_info_for_selector()
 
 func _on_back_pressed() -> void:
     _go_back_to_main_menu()
