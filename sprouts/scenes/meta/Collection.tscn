@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://ct1lyy1do1r1k" path="res://scripts/ui/Collection.gd" id="1_j4snc"]
 
 [node name="Collection" type="Control"]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_j4snc")
 tabs_container_path = NodePath("TabsContainer")
 card_grid_path = NodePath("CardGrid")
