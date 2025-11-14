@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Sprouts"
-run/main_scene="uid://yr2ixj15ohk3"
+run/main_scene="uid://cdbdahdlrgnk"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
