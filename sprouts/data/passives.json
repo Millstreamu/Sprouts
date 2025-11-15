@@ -1,0 +1,23 @@
+[
+    {
+        "id": "pas.split_strike",
+        "trigger": "on_attack",
+        "effects": [
+            {"type": "extra_hit", "hits": 1, "mult": 0.5}
+        ]
+    },
+    {
+        "id": "pas.regen_small",
+        "trigger": "turn_tick",
+        "effects": [
+            {"type": "heal_pct", "amount": 0.02}
+        ]
+    },
+    {
+        "id": "pas.stone_skin",
+        "trigger": "on_battle_start",
+        "effects": [
+            {"type": "defense_add", "amount": 4}
+        ]
+    }
+]

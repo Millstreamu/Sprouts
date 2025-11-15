@@ -168,9 +168,6 @@ const ENEMY_CONFIG := {
 	}
 }
 
-var _tile_defs: Array = []
-var _tile_defs_by_id: Dictionary = {}
-
 var _commune_active: bool = false
 
 var _res_nature: int = 0
@@ -179,14 +176,17 @@ var _res_earth: int = 0
 var _res_souls: int = 0
 
 func _ready() -> void:
-	_back_button.pressed.connect(_on_back_pressed)
-	if is_instance_valid(_commune_window):
-		_commune_window.offer_chosen.connect(_on_commune_offer_chosen)
-		_commune_window.visible = false
-	_init_tiles()
-	_init_decay_grid()
-	_load_tile_defs()
-	_cluster_rewards.clear()
+        _back_button.pressed.connect(_on_back_pressed)
+        if is_instance_valid(_commune_window):
+                _commune_window.offer_chosen.connect(_on_commune_offer_chosen)
+                _commune_window.visible = false
+        if Engine.has_singleton("DataDB"):
+                print("ShroudWorld: DataDB tiles available = %d" % DataDB.tile_defs.size())
+        else:
+                print("ShroudWorld: DataDB singleton not found")
+        _init_tiles()
+        _init_decay_grid()
+        _cluster_rewards.clear()
 	_turn_number = 1
 	_phase = PHASE_COMMUNE
 	_run_over = false
@@ -360,10 +360,10 @@ func _on_hud_next_turn_requested() -> void:
 	_try_end_turn_from_input()
 
 func _init_tiles() -> void:
-	_tiles.clear()
-	_overgrowth_age.clear()
-	_cluster_ids.clear()
-	for r in GRID_HEIGHT:
+        _tiles.clear()
+        _overgrowth_age.clear()
+        _cluster_ids.clear()
+        for r in GRID_HEIGHT:
 		var row: Array = []
 		var age_row: Array = []
 		var cluster_row: Array = []
@@ -371,17 +371,29 @@ func _init_tiles() -> void:
 			row.append("")
 			age_row.append(0)
 			cluster_row.append(-1)
-		_tiles.append(row)
-		_overgrowth_age.append(age_row)
-		_cluster_ids.append(cluster_row)
+                _tiles.append(row)
+                _overgrowth_age.append(age_row)
+                _cluster_ids.append(cluster_row)
+
+func _get_tile_def(tile_id: String) -> Dictionary:
+        if tile_id.is_empty():
+                return null
+        if Engine.has_singleton("DataDB"):
+                return DataDB.get_tile_def(tile_id)
+        return null
+
+func _get_tile_defs_map() -> Dictionary:
+        if Engine.has_singleton("DataDB"):
+                return DataDB.tile_defs
+        return {}
 
 func _get_tile_category(tile_id: String) -> String:
-	if tile_id.is_empty():
-		return ""
-	if not _tile_defs_by_id.has(tile_id):
-		return ""
-	var def := _tile_defs_by_id[tile_id]
-	return str(def.get("category", ""))
+        if tile_id.is_empty():
+                return ""
+        var def := _get_tile_def(tile_id)
+        if def == null:
+                return ""
+        return str(def.get("category", ""))
 
 func _recompute_clusters() -> void:
 	_clusters.clear()
@@ -600,42 +612,42 @@ func _build_tile_info_for(q: int, r: int) -> Dictionary:
 		info["state"] = "Empty"
 		return info
 
-	if is_decay:
-		info["name"] = "Creeping Decay"
-		info["category"] = "Decay"
-		info["tags"] = ["DECAY"]
-		info["state"] = "Decay"
-		var decay_desc := "Spreading corruption. Destroys life tiles and totems if left unchecked."
-		if not tile_id.is_empty():
-			var target_name := tile_id
-			if _tile_defs_by_id.has(tile_id):
-				var target_def := _tile_defs_by_id[tile_id]
-				target_name = str(target_def.get("name", tile_id))
-			decay_desc += " Currently overrunning %s." % target_name
-		info["description"] = decay_desc
-		return info
+        if is_decay:
+                info["name"] = "Creeping Decay"
+                info["category"] = "Decay"
+                info["tags"] = ["DECAY"]
+                info["state"] = "Decay"
+                var decay_desc := "Spreading corruption. Destroys life tiles and totems if left unchecked."
+                if not tile_id.is_empty():
+                        var target_name := tile_id
+                        var target_def := _get_tile_def(tile_id)
+                        if target_def != null:
+                                target_name = str(target_def.get("name", tile_id))
+                        decay_desc += " Currently overrunning %s." % target_name
+                info["description"] = decay_desc
+                return info
 
-	var display_name := tile_id
-	var category := "Unknown"
-	var description := ""
-	var tags: Array[String] = []
+        var display_name := tile_id
+        var category := "Unknown"
+        var description := ""
+        var tags: Array[String] = []
 
-	if _tile_defs_by_id.has(tile_id):
-		var def := _tile_defs_by_id[tile_id]
-		display_name = str(def.get("name", tile_id))
-		category = str(def.get("category", "Unknown"))
-		description = str(def.get("description", ""))
-		var def_tags := def.get("tags", [])
-		if def_tags is Array:
+        var def := _get_tile_def(tile_id)
+        if def != null:
+                display_name = str(def.get("name", tile_id))
+                category = str(def.get("category", "Unknown"))
+                description = str(def.get("description", ""))
+                var def_tags := def.get("tags", [])
+                if def_tags is Array:
 			for tag in def_tags:
 				tags.append(str(tag))
 		elif def_tags is PackedStringArray:
 			var packed_tags := def_tags as PackedStringArray
 			for tag in packed_tags:
 				tags.append(tag)
-	else:
-		display_name = tile_id
-		category = "Unknown"
+        else:
+                display_name = tile_id
+                category = "Unknown"
 
 	var state := "Normal"
 	if tile_id == TILE_ID_OVERGROWTH:
@@ -692,15 +704,14 @@ func _build_tile_info_for(q: int, r: int) -> Dictionary:
 	return info
 
 func _build_output_summary_for_tile(tile_id: String) -> String:
-	if tile_id.is_empty():
-		return "N/A"
-	if not _tile_defs_by_id.has(tile_id):
-		return "N/A"
-
-	var def := _tile_defs_by_id[tile_id]
-	var base_output := def.get("base_output", {})
-	if not (base_output is Dictionary):
-		return "N/A"
+        if tile_id.is_empty():
+                return "N/A"
+        var def := _get_tile_def(tile_id)
+        if def == null:
+                return "N/A"
+        var base_output := def.get("base_output", {})
+        if not (base_output is Dictionary):
+                return "N/A"
 
 	var output_dict := base_output as Dictionary
 	var nature_out := int(output_dict.get("nature", 0))
@@ -745,15 +756,16 @@ func _update_tile_info_for_selector() -> void:
 		var is_decay := false
 		if _decay_grid.size() > r and _decay_grid[r].size() > q:
 			is_decay = bool(_decay_grid[r][q])
-		if tile_id != "" or is_decay:
-			var tile_name := "None"
-			if is_decay:
-				tile_name = "Creeping Decay"
-			elif _tile_defs_by_id.has(tile_id):
-				var def := _tile_defs_by_id[tile_id]
-				tile_name = str(def.get("name", tile_id))
-			else:
-				tile_name = tile_id
+                        if tile_id != "" or is_decay:
+                                var tile_name := "None"
+                                if is_decay:
+                                        tile_name = "Creeping Decay"
+                                else:
+                                        var def := _get_tile_def(tile_id)
+                                        if def != null:
+                                                tile_name = str(def.get("name", tile_id))
+                                        else:
+                                                tile_name = tile_id
 			label_text = "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
 			if not is_decay:
 				var cluster_id := _cluster_ids[r][q]
@@ -982,38 +994,6 @@ func _init_totems_for_run() -> void:
 		_run_initial_decay_totems = _alive_decay_totem_count
 		print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
 
-func _load_tile_defs() -> void:
-		_tile_defs.clear()
-		_tile_defs_by_id.clear()
-
-	var path := "res://data/tiles.json"
-	if not FileAccess.file_exists(path):
-		print("ShroudWorld: tiles.json not found at ", path)
-		return
-
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		print("ShroudWorld: failed to open tiles.json")
-		return
-
-	var text := file.get_as_text()
-	var parsed := JSON.parse_string(text)
-	if parsed == null:
-		print("ShroudWorld: JSON parse failed for tiles.json")
-		return
-
-	if parsed is Array:
-		for entry in parsed:
-			if entry is Dictionary:
-				var id := str(entry.get("id", ""))
-				if id.is_empty():
-					continue
-				_tile_defs.append(entry)
-				_tile_defs_by_id[id] = entry
-				print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
-		else:
-				print("ShroudWorld: tiles.json root is not an Array")
-
 func _clamp_selector() -> void:
 	_selector_q = clampi(_selector_q, 0, GRID_WIDTH - 1)
 	_selector_r = clampi(_selector_r, 0, GRID_HEIGHT - 1)
@@ -1056,13 +1036,13 @@ func _generate_resources_for_turn() -> void:
 
 	for r in GRID_HEIGHT:
 		for q in GRID_WIDTH:
-			var tile_id := str(_tiles[r][q])
-			if tile_id == "":
-				continue
-			if not _tile_defs_by_id.has(tile_id):
-				continue
-			var def := _tile_defs_by_id[tile_id]
-			var base_output := def.get("base_output", {})
+                        var tile_id := str(_tiles[r][q])
+                        if tile_id == "":
+                                continue
+                        var def := _get_tile_def(tile_id)
+                        if def == null:
+                                continue
+                        var base_output := def.get("base_output", {})
 			if base_output is Dictionary:
 				add_nature += int(base_output.get("nature", 0))
 				add_water += int(base_output.get("water", 0))
@@ -1444,23 +1424,25 @@ func _generate_tile_offers() -> Array:
 
 	var totem_id := ""
 	var difficulty := "medium"
-	if Engine.has_singleton("RunContext"):
-		var ctx := RunContext
-		totem_id = str(ctx.selected_totem_id)
-		difficulty = str(ctx.selected_difficulty)
-		if difficulty.is_empty():
-			difficulty = "medium"
-	else:
-		print("ShroudWorld: RunContext not available when generating commune offers")
+        if Engine.has_singleton("RunContext"):
+                var ctx := RunContext
+                totem_id = str(ctx.selected_totem_id)
+                difficulty = str(ctx.selected_difficulty)
+                if difficulty.is_empty():
+                        difficulty = "medium"
+        else:
+                print("ShroudWorld: RunContext not available when generating commune offers")
 
-	if Engine.has_singleton("CommuneManager"):
-		var offers := CommuneManager.generate_offers(
-			_tile_defs_by_id,
-			unlocked_entries,
-			totem_id,
-			difficulty,
-			3
-		)
+        var tile_defs_map := _get_tile_defs_map()
+
+        if Engine.has_singleton("CommuneManager"):
+                var offers := CommuneManager.generate_offers(
+                        tile_defs_map,
+                        unlocked_entries,
+                        totem_id,
+                        difficulty,
+                        3
+                )
 		if not offers.is_empty():
 			print(
 				"ShroudWorld: generated weighted commune offers (totem=%s, difficulty=%s)" % [
@@ -1486,19 +1468,19 @@ func _generate_tile_offers() -> Array:
 
 		if not (entry is Dictionary):
 			continue
-		var tile_id := str(entry.get("id", ""))
-		if tile_id.is_empty():
-			continue
-		var name := tile_id
-		var category := ""
-		var description := ""
-		if _tile_defs_by_id.has(tile_id):
-			var def := _tile_defs_by_id[tile_id]
-			name = str(def.get("name", name))
-			category = str(def.get("category", ""))
-			description = str(def.get("description", ""))
+                var tile_id := str(entry.get("id", ""))
+                if tile_id.is_empty():
+                        continue
+                var name := tile_id
+                var category := ""
+                var description := ""
+                if tile_defs_map.has(tile_id):
+                        var def := tile_defs_map[tile_id]
+                        name = str(def.get("name", name))
+                        category = str(def.get("category", ""))
+                        description = str(def.get("description", ""))
 
-		fallback_offers.append({
+                fallback_offers.append({
 			"id": tile_id,
 			"name": name,
 			"category": category,
@@ -1512,11 +1494,11 @@ func _on_commune_offer_chosen(tile_id: String) -> void:
 	if chosen_id.is_empty():
 		return
 
-	_current_tile_id = chosen_id
-	_current_tile_name = chosen_id
-	if _tile_defs_by_id.has(chosen_id):
-		var def := _tile_defs_by_id[chosen_id]
-		_current_tile_name = str(def.get("name", chosen_id))
+        _current_tile_id = chosen_id
+        _current_tile_name = chosen_id
+        var chosen_def := _get_tile_def(chosen_id)
+        if chosen_def != null:
+                _current_tile_name = str(chosen_def.get("name", chosen_id))
 
 	_phase = PHASE_PLAYER
 	_commune_active = false

@@ -1,0 +1,20 @@
+[
+    {
+        "id": "atk.slam",
+        "name": "Slam",
+        "cooldown_sec": 4.0,
+        "target_row": "front",
+        "effects": [
+            {"type": "damage", "amount": 14}
+        ]
+    },
+    {
+        "id": "atk.pierce",
+        "name": "Pierce",
+        "cooldown_sec": 3.0,
+        "target_row": "back",
+        "effects": [
+            {"type": "damage", "amount": 10}
+        ]
+    }
+]
