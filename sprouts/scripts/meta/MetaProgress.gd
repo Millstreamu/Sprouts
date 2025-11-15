@@ -1,5 +1,4 @@
 extends Node
-class_name MetaProgress
 
 var unlocked_totems: Dictionary = {}
 var unlocked_sprouts: Dictionary = {}
