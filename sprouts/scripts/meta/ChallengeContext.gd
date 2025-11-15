@@ -73,8 +73,10 @@ func _update_progress(id: String, delta: int) -> void:
         progress = 0
 
     ch["progress"] = progress
+    var just_completed := false
     if progress >= target:
         ch["completed"] = true
+        just_completed = true
 
     challenges[id] = ch
     print("ChallengeContext: %s progress = %d / %d (completed=%s)" % [
@@ -83,6 +85,9 @@ func _update_progress(id: String, delta: int) -> void:
         target,
         str(ch["completed"])
     ])
+
+    if just_completed:
+        _on_challenge_completed(id)
 
 func update_after_run(result: String, run_stats: Dictionary) -> void:
     if result == "victory":
@@ -95,3 +100,22 @@ func update_after_run(result: String, run_stats: Dictionary) -> void:
     var totems_destroyed := int(run_stats.get("decay_totems_destroyed", 0))
     if totems_destroyed > 0:
         _update_progress("challenge.destroy_totems_3", totems_destroyed)
+
+func _on_challenge_completed(id: String) -> void:
+    print("ChallengeContext: challenge completed -> %s" % id)
+
+    if not Engine.has_singleton("MetaProgress"):
+        print("ChallengeContext: MetaProgress not available, cannot grant unlocks")
+        return
+
+    var meta := MetaProgress
+
+    match id:
+        "challenge.first_victory":
+            meta.unlock_totem("totem.stoneward")
+        "challenge.destroy_totems_3":
+            meta.unlock_tile("tile.mystic.soul_bloom")
+        "challenge.spawn_sprouts_20":
+            meta.unlock_sprout("sprout.moss_golem")
+        _:
+            pass

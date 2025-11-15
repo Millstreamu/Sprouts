@@ -21,4 +21,5 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 
 [autoload]
+MetaProgress="*res://scripts/meta/MetaProgress.gd"
 ChallengeContext="*res://scripts/meta/ChallengeContext.gd"
