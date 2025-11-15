@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/WorldHUD.gd" id="1_jtnpu"]
+
+[node name="WorldHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jtnpu")
+nature_label_path = NodePath("ResourcePanel/ResourceList/NatureRow/NatureLabel")
+earth_label_path = NodePath("ResourcePanel/ResourceList/EarthRow/EarthLabel")
+water_label_path = NodePath("ResourcePanel/ResourceList/WaterRow/WaterLabel")
+souls_label_path = NodePath("ResourcePanel/ResourceList/SoulsRow/SoulsLabel")
+next_turn_button_path = NodePath("NextTurnButton")
+
+[node name="ResourcePanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 0
+
+[node name="ResourceList" type="VBoxContainer" parent="ResourcePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="NatureRow" type="HBoxContainer" parent="ResourcePanel/ResourceList"]
+layout_mode = 2
+
+[node name="NatureLabel" type="Label" parent="ResourcePanel/ResourceList/NatureRow"]
+text = "Nature: 0"
+
+[node name="EarthRow" type="HBoxContainer" parent="ResourcePanel/ResourceList"]
+layout_mode = 2
+
+[node name="EarthLabel" type="Label" parent="ResourcePanel/ResourceList/EarthRow"]
+text = "Earth: 0"
+
+[node name="WaterRow" type="HBoxContainer" parent="ResourcePanel/ResourceList"]
+layout_mode = 2
+
+[node name="WaterLabel" type="Label" parent="ResourcePanel/ResourceList/WaterRow"]
+text = "Water: 0"
+
+[node name="SoulsRow" type="HBoxContainer" parent="ResourcePanel/ResourceList"]
+layout_mode = 2
+
+[node name="SoulsLabel" type="Label" parent="ResourcePanel/ResourceList/SoulsRow"]
+text = "Soul Seeds: 0"
+
+[node name="NextTurnButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 0
+text = "RL - Next Turn"

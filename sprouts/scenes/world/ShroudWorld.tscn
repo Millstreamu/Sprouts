@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/ShroudWorld.gd" id="1_u7lpo"]
 [ext_resource type="Script" path="res://scripts/world/HexGrid.gd" id="2_gyr5m"]
 [ext_resource type="Script" path="res://scripts/world/Selector.gd" id="3_vf1yr"]
+[ext_resource type="PackedScene" path="res://scenes/world/ui/WorldHUD.tscn" id="4_qsm6o"]
 
 [node name="ShroudWorld" type="Control"]
 layout_mode = 3
@@ -18,8 +19,7 @@ world_root_path = NodePath("WorldRoot")
 hex_grid_path = NodePath("WorldRoot/HexGrid")
 selector_path = NodePath("WorldRoot/Selector")
 tile_info_label_path = NodePath("TilePanel/TileInfoLabel")
-resource_label_path = NodePath("ResourcePanel/ResourceLabel")
-end_turn_hint_label_path = NodePath("ResourcePanel/EndTurnHintLabel")
+world_hud_path = NodePath("WorldHUDInstance")
 back_button_path = NodePath("BackButton")
 commune_overlay_path = NodePath("CommuneOverlay")
 commune_title_label_path = NodePath("CommuneOverlay/CommunePanel/CommuneTitleLabel")
@@ -134,34 +134,6 @@ offset_right = 188.0
 offset_bottom = 60.0
 text = "Current Tile: (placeholder)"
 
-[node name="ResourcePanel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 12
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -264.0
-offset_top = -200.0
-offset_right = -24.0
-offset_bottom = -24.0
-
-[node name="ResourceLabel" type="Label" parent="ResourcePanel"]
-layout_mode = 0
-offset_left = 12.0
-offset_top = 12.0
-offset_right = 228.0
-offset_bottom = 44.0
-text = "Nature: 0 | Water: 0 | Earth: 0 | Souls: 0"
-
-[node name="EndTurnHintLabel" type="Label" parent="ResourcePanel"]
-layout_mode = 0
-offset_left = 12.0
-offset_top = 56.0
-offset_right = 228.0
-offset_bottom = 88.0
-text = "RL - Next Turn (Press V)"
-
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
@@ -170,6 +142,8 @@ offset_top = 80.0
 offset_right = 124.0
 offset_bottom = 120.0
 text = "Back"
+
+[node name="WorldHUDInstance" parent="." instance=ExtResource("4_qsm6o")]
 
 [node name="CommuneOverlay" type="Control" parent="."]
 visible = false
