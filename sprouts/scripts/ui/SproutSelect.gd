@@ -101,12 +101,20 @@ func _populate_sprouts() -> void:
 	_update_selection()
 
 func _update_selection() -> void:
-	if _cards.is_empty():
-		_selected_index = 0
-		return
-	_selected_index = clampi(_selected_index, 0, _cards.size() - 1)
-	print("SproutSelect: selected index = %d" % _selected_index)
-	_refresh_card_visuals()
+        if _cards.is_empty():
+                _selected_index = 0
+                return
+        _selected_index = clampi(_selected_index, 0, _cards.size() - 1)
+        print("SproutSelect: selected index = %d" % _selected_index)
+        _refresh_card_visuals()
+        _ensure_selected_visible()
+
+func _ensure_selected_visible() -> void:
+        if _cards.is_empty() or _scroll == null:
+                return
+        var card := _cards[_selected_index]
+        if is_instance_valid(card):
+                _scroll.ensure_control_visible(card)
 
 func _move_selection(delta: int) -> void:
 	if _cards.is_empty():
@@ -177,18 +185,18 @@ func _update_status_label() -> void:
 		_status_label.text = "Press P or Continue to start run"
 
 func _continue_if_ready() -> void:
-	if _selected_sprout_ids.size() != MAX_SELECTED_SPROUTS:
-		print("SproutSelect: need exactly %d sprouts to continue" % MAX_SELECTED_SPROUTS)
-		_update_status_label()
-		return
+        if _selected_sprout_ids.size() != MAX_SELECTED_SPROUTS:
+                print("SproutSelect: need exactly %d sprouts to continue" % MAX_SELECTED_SPROUTS)
+                _update_status_label()
+                return
 
-		var run_context_path := NodePath("/root/RunContext")
-		var ctx := get_node_or_null(run_context_path) as RunContext
-		if ctx != null:
-				ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
-				ctx.debug_print()
-		else:
-				print("SproutSelect: WARNING - RunContext singleton not found")
+        var run_context_path := NodePath("/root/RunContext")
+        var ctx := get_node_or_null(run_context_path) as RunContext
+        if ctx != null:
+                ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
+                ctx.debug_print()
+        else:
+                print("SproutSelect: WARNING - RunContext singleton not found")
 
 	print("SproutSelect: CONTINUE with sprouts: %s" % ", ".join(_selected_sprout_ids))
 	get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
