@@ -1,5 +1,4 @@
 extends Node
-class_name ChallengeContext
 
 var challenges: Dictionary = {}
 
@@ -42,7 +41,7 @@ func get_all_challenges() -> Array:
     var arr: Array = []
     for key in challenges.keys():
         arr.append(challenges[key])
-    arr.sort_custom(self, "_sort_challenge_dicts")
+    arr.sort_custom(Callable(self, "_sort_challenge_dicts"))
     return arr
 
 func _sort_challenge_dicts(a: Dictionary, b: Dictionary) -> bool:
@@ -61,7 +60,7 @@ func _ensure_entry(id: String) -> void:
 
 func _update_progress(id: String, delta: int) -> void:
     _ensure_entry(id)
-    var ch := challenges[id]
+    var ch: Dictionary = challenges[id]
     if ch.get("completed", false):
         return
 
