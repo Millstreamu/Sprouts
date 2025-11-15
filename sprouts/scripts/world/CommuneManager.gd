@@ -1,5 +1,4 @@
 extends Node
-class_name CommuneManager
 
 var _base_category_weights: Dictionary = {
     "default": {
@@ -82,14 +81,15 @@ func _get_category_weight_for(totem_id: String, difficulty: String, category: St
     return base_weight * diff_mult
 
 func _compute_tile_weight(tile_def: Dictionary, totem_id: String, difficulty: String) -> float:
-    var category := str(tile_def.get("category", ""))
+    var category: String = str(tile_def.get("category", ""))
     if category.is_empty():
         return 0.0
-    var weight := _get_category_weight_for(totem_id, difficulty, category)
+    var weight: float = _get_category_weight_for(totem_id, difficulty, category)
     if weight <= 0.0:
         return 0.0
-    var tags := tile_def.get("tags", [])
-    if tags is Array:
+    var tags_data := tile_def.get("tags", [])
+    if tags_data is Array:
+        var tags: Array = tags_data
         if "unique" in tags:
             weight *= 0.7
     return weight
@@ -100,16 +100,16 @@ func _weighted_pick_indices(weights: Array[float], count: int) -> Array[int]:
     for i in range(weights.size()):
         if weights[i] > 0.0:
             available.append(i)
-    var remaining := count
+    var remaining: int = count
     while remaining > 0 and not available.is_empty():
-        var total_weight := 0.0
+        var total_weight: float = 0.0
         for idx in available:
             total_weight += weights[idx]
         if total_weight <= 0.0:
             break
-        var roll := randf() * total_weight
-        var chosen_idx := -1
-        var accum := 0.0
+        var roll: float = randf() * total_weight
+        var chosen_idx: int = -1
+        var accum: float = 0.0
         for idx in available:
             accum += weights[idx]
             if roll <= accum:
@@ -136,13 +136,13 @@ func generate_offers(
             continue
         if not bool(entry.get("unlocked", false)):
             continue
-        var tile_id := str(entry.get("id", ""))
+        var tile_id: String = str(entry.get("id", ""))
         if tile_id.is_empty():
             continue
-        var def := tile_defs.get(tile_id, null)
-        if def == null:
+        if not tile_defs.has(tile_id):
             continue
-        var weight := _compute_tile_weight(def, totem_id, difficulty)
+        var def: Dictionary = tile_defs[tile_id]
+        var weight: float = _compute_tile_weight(def, totem_id, difficulty)
         if weight <= 0.0:
             continue
         candidates.append(entry)
@@ -150,20 +150,20 @@ func generate_offers(
     if candidates.is_empty():
         print("CommuneManager: no candidates for offers")
         return []
-    var indices := _weighted_pick_indices(weights, offer_count)
+    var indices: Array[int] = _weighted_pick_indices(weights, offer_count)
     var offers: Array = []
     for idx in indices:
         if idx < 0 or idx >= candidates.size():
             continue
-        var entry := candidates[idx]
-        var tile_id := str(entry.get("id", ""))
+        var entry: Dictionary = candidates[idx]
+        var tile_id: String = str(entry.get("id", ""))
         if tile_id.is_empty():
             continue
-        var name := str(entry.get("name", tile_id))
-        var category := ""
-        var description := ""
-        var def := tile_defs.get(tile_id, null)
-        if def != null:
+        var name: String = str(entry.get("name", tile_id))
+        var category: String = ""
+        var description: String = ""
+        if tile_defs.has(tile_id):
+            var def: Dictionary = tile_defs[tile_id]
             name = str(def.get("name", name))
             category = str(def.get("category", ""))
             description = str(def.get("description", ""))
