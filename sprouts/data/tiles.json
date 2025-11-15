@@ -1,79 +1,171 @@
 [
-  {
-    "id": "tile.nature.whispering_pine_forest",
-    "name": "Whispering Pine Forest",
-    "category": "Nature",
-    "base_output": {
-      "nature": 2,
-      "water": 0,
-      "earth": 0,
-      "souls": 0
+    {
+        "id": "tile.nature.whispering_pine_forest",
+        "category": "Nature",
+        "name": "Whispering Pine Forest",
+        "description": "Generates +2 Nature per turn. If adjacent to any FOREST tile, generate +1 additional Nature.",
+        "tags": ["forest", "nature"],
+        "base_output": {"nature": 2, "water": 0, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "target": {"scope": "self"},
+                "op": "add",
+                "stat": "output.nature",
+                "amount": 2
+            },
+            {
+                "when": "start_of_turn",
+                "target": {"scope": "self"},
+                "condition": {
+                    "adjacent_count": {"tag": "forest", "op": ">=", "value": 1}
+                },
+                "op": "add",
+                "stat": "output.nature",
+                "amount": 1
+            }
+        ]
+    },
+    {
+        "id": "tile.nature.moss_terrace",
+        "category": "Nature",
+        "name": "Moss Terrace",
+        "description": "Every 2 turns, spawns 1 OVERGROWTH into an adjacent empty hex.",
+        "tags": ["moss", "wet", "nature"],
+        "base_output": {"nature": 0, "water": 0, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "interval_turns": 2,
+                "target": {"scope": "adjacent"},
+                "op": "spawn",
+                "amount": {"tile_id": "tile.special.overgrowth", "count": 1, "empty_only": true}
+            }
+        ]
+    },
+    {
+        "id": "tile.special.overgrowth",
+        "category": "Nature",
+        "name": "Overgrowth",
+        "description": "After 3 turns, transforms into a GROVE.",
+        "tags": ["overgrowth", "nature"],
+        "base_output": {"nature": 0, "water": 0, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "interval_turns": 3,
+                "target": {"scope": "self"},
+                "op": "transform",
+                "amount": {"to": "tile.special.grove"}
+            }
+        ]
+    },
+    {
+        "id": "tile.special.grove",
+        "category": "Nature",
+        "name": "Grove",
+        "description": "On bloom, spawns 1 Sprout of your selected run types.",
+        "tags": ["grove", "nature"],
+        "base_output": {"nature": 1, "water": 0, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "on_transform",
+                "target": {"scope": "self"},
+                "op": "add",
+                "stat": "output.spawn_sprout",
+                "amount": 1
+            }
+        ]
+    },
+    {
+        "id": "tile.water.mirror_pool",
+        "category": "Water",
+        "name": "Mirror Pool",
+        "description": "Generates +1 Water every 2 turns. If adjacent to any NATURE tile, doubles Water output.",
+        "tags": ["pool", "water", "wet"],
+        "base_output": {"nature": 0, "water": 1, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "interval_turns": 2,
+                "target": {"scope": "self"},
+                "op": "add",
+                "stat": "output.water",
+                "amount": 1
+            },
+            {
+                "when": "start_of_turn",
+                "target": {"scope": "self"},
+                "condition": {
+                    "adjacent_count": {"tag": "nature", "op": ">=", "value": 1}
+                },
+                "op": "mul",
+                "stat": "output.water",
+                "amount": 2
+            }
+        ]
+    },
+    {
+        "id": "tile.earth.stone_vein",
+        "category": "Earth",
+        "name": "Stone Vein",
+        "description": "Generates +1 Earth per turn, plus +1 Earth if adjacent to any ROCKY tile.",
+        "tags": ["rocky", "earth"],
+        "base_output": {"nature": 0, "water": 0, "earth": 1, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "target": {"scope": "self"},
+                "op": "add",
+                "stat": "output.earth",
+                "amount": 1
+            },
+            {
+                "when": "start_of_turn",
+                "target": {"scope": "self"},
+                "condition": {
+                    "adjacent_count": {"tag": "rocky", "op": ">=", "value": 1}
+                },
+                "op": "add",
+                "stat": "output.earth",
+                "amount": 1
+            }
+        ]
+    },
+    {
+        "id": "tile.mystic.soul_bloom",
+        "category": "Mystic",
+        "name": "Soul Bloom",
+        "description": "Every 8 turns, produces 1 Soul Seed.",
+        "tags": ["mystic", "seed"],
+        "base_output": {"nature": 0, "water": 0, "earth": 0, "souls": 1},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "interval_turns": 8,
+                "target": {"scope": "self"},
+                "op": "add",
+                "stat": "output.soul_seed",
+                "amount": 1
+            }
+        ]
+    },
+    {
+        "id": "tile.aggression.thorn_watch",
+        "category": "Aggression",
+        "name": "Thorn Watch",
+        "description": "If touching Decay, every 4 turns cleanse up to 1 adjacent Decay tile.",
+        "tags": ["ward", "aggression"],
+        "base_output": {"nature": 0, "water": 0, "earth": 0, "souls": 0},
+        "effects": [
+            {
+                "when": "start_of_turn",
+                "interval_turns": 4,
+                "target": {"scope": "radius", "radius": 1},
+                "condition": {"touching_decay": true},
+                "op": "cleanse_decay",
+                "amount": {"radius": 1, "max_tiles": 1}
+            }
+        ]
     }
-  },
-  {
-    "id": "tile.water.mirror_pool",
-    "name": "Mirror Pool",
-    "category": "Water",
-    "base_output": {
-      "nature": 0,
-      "water": 1,
-      "earth": 0,
-      "souls": 0
-    }
-  },
-  {
-    "id": "tile.earth.stone_vein",
-    "name": "Stone Vein",
-    "category": "Earth",
-    "base_output": {
-      "nature": 0,
-      "water": 0,
-      "earth": 1,
-      "souls": 0
-    }
-  },
-  {
-    "id": "tile.mystic.soul_bloom",
-    "name": "Soul Bloom",
-    "category": "Mystic",
-    "base_output": {
-      "nature": 0,
-      "water": 0,
-      "earth": 0,
-      "souls": 1
-    }
-  },
-  {
-    "id": "tile.aggression.thorn_watch",
-    "name": "Thorn Watch",
-    "category": "Aggression",
-    "base_output": {
-      "nature": 0,
-      "water": 0,
-      "earth": 0,
-      "souls": 0
-    }
-  },
-  {
-    "id": "tile.special.overgrowth",
-    "name": "Overgrowth",
-    "category": "Nature",
-    "base_output": {
-      "nature": 0,
-      "water": 0,
-      "earth": 0,
-      "souls": 0
-    }
-  },
-  {
-    "id": "tile.special.grove",
-    "name": "Grove",
-    "category": "Nature",
-    "base_output": {
-      "nature": 1,
-      "water": 0,
-      "earth": 0,
-      "souls": 0
-    }
-  }
 ]

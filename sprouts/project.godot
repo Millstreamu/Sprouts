@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+DataDB="*res://scripts/data/DataDB.gd"
 MetaProgress="*res://scripts/meta/MetaProgress.gd"
 ChallengeContext="*res://scripts/meta/ChallengeContext.gd"
 CommuneManager="*res://scripts/world/CommuneManager.gd"

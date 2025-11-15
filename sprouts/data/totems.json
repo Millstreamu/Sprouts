@@ -1,0 +1,62 @@
+[
+    {
+        "id": "totem.heartseed",
+        "name": "Heartseed Totem",
+        "description": "Nature-leaning starter totem.",
+        "base_passives": ["pas.regen_small"],
+        "unique_tiles": ["tile.nature.heartroot_grove"],
+        "commune_bias": {
+            "Nature": 1.8,
+            "Earth": 1.0,
+            "Water": 1.0,
+            "Nest": 0.7,
+            "Mystic": 1.3,
+            "Aggression": 0.6
+        }
+    },
+    {
+        "id": "totem.stoneward",
+        "name": "Stoneward Totem",
+        "description": "Defensive Earth/Nest leaning totem.",
+        "base_passives": ["pas.stone_skin"],
+        "unique_tiles": [],
+        "commune_bias": {
+            "Nature": 1.0,
+            "Earth": 1.8,
+            "Water": 1.0,
+            "Nest": 1.3,
+            "Mystic": 0.7,
+            "Aggression": 1.3
+        }
+    },
+    {
+        "id": "totem.wavecall",
+        "name": "Wavecall Totem",
+        "description": "Water-focused totem with some Mystic support.",
+        "base_passives": ["pas.regen_small"],
+        "unique_tiles": [],
+        "commune_bias": {
+            "Nature": 1.2,
+            "Earth": 0.9,
+            "Water": 1.8,
+            "Nest": 0.7,
+            "Mystic": 1.2,
+            "Aggression": 0.8
+        }
+    },
+    {
+        "id": "totem.bloomspire",
+        "name": "Bloomspire Totem",
+        "description": "High Nature/Mystic synergy totem.",
+        "base_passives": [],
+        "unique_tiles": [],
+        "commune_bias": {
+            "Nature": 2.0,
+            "Earth": 0.9,
+            "Water": 1.0,
+            "Nest": 0.7,
+            "Mystic": 1.5,
+            "Aggression": 0.7
+        }
+    }
+]
