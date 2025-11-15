@@ -51,6 +51,8 @@ const GRID_HEIGHT: int = 5
 const HEX_SIZE: float = 40.0
 
 const SPROUT_REGEN_PCT_PER_TURN: float = 0.05
+const SOUL_SEED_COST_BASE: int = 1
+const SOUL_SEED_COST_PER_LEVEL: int = 1
 
 const PHASE_COMMUNE: int = 0
 const PHASE_PLAYER: int = 1
@@ -71,6 +73,7 @@ var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
 
 var _sprouts: Array = []
+var _sprout_registry_selected_index: int = 0
 var _next_sprout_instance_id: int = 0
 
 var _battle_overlay_active: bool = false
@@ -181,90 +184,107 @@ func _ready() -> void:
 	print("ShroudWorld: ready")
 
 func _input(event: InputEvent) -> void:
-        if _run_over:
-                if Input.is_action_just_pressed("ui_accept"):
-                        print("ShroudWorld: returning to Main Menu after run end")
-                        get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
-                        accept_event()
+    if _battle_overlay_active:
+        return
+
+    if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
+        if Input.is_action_just_pressed("ui_up"):
+            _sprout_registry_move_selection(-1)
+            accept_event()
+            return
+        if Input.is_action_just_pressed("ui_down"):
+            _sprout_registry_move_selection(1)
+            accept_event()
+            return
+        if Input.is_action_just_pressed("ui_cancel"):
+            _hide_sprout_registry()
+            accept_event()
+            return
+        if event is InputEventKey and event.pressed and not event.echo:
+            if event.keycode == Key.KEY_G:
+                _try_level_selected_sprout_with_soul_seeds()
+                accept_event()
+                return
+            if event.keycode == Key.KEY_R:
+                _hide_sprout_registry()
+                accept_event()
+                return
+        return
+
+    if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == Key.KEY_R:
+            _toggle_sprout_registry()
+            accept_event()
+            return
+
+        if event.keycode == Key.KEY_C:
+            _debug_print_clusters()
+            accept_event()
+            return
+
+        if event.keycode == Key.KEY_B:
+            _start_debug_battle()
+            accept_event()
+            return
+
+    if Input.is_action_just_pressed("ui_cancel"):
+        if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
+            _hide_sprout_registry()
+            accept_event()
+            return
+        _go_back_to_main_menu()
+        accept_event()
+        return
+
+    if _phase == PHASE_COMMUNE and _commune_overlay.visible:
+        if event is InputEventKey and event.pressed and not event.echo:
+            match event.keycode:
+                Key.KEY_1:
+                    _select_commune_choice(0)
+                    accept_event()
+                    return
+                Key.KEY_2:
+                    _select_commune_choice(1)
+                    accept_event()
+                    return
+                Key.KEY_3:
+                    _select_commune_choice(2)
+                    accept_event()
+                    return
+            return
+
+    if _phase != PHASE_PLAYER:
+        return
+
+    if Input.is_action_just_pressed("ui_accept"):
+        if _selector_r >= 0 and _selector_r < GRID_HEIGHT and _selector_q >= 0 and _selector_q < GRID_WIDTH:
+            if _decay_grid[_selector_r][_selector_q]:
+                _start_decay_attack_battle(_selector_q, _selector_r)
+                accept_event()
                 return
 
-        if _battle_overlay_active:
-                return
+        _place_tile_at_selector()
+        accept_event()
+        return
 
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == Key.KEY_R:
-			_toggle_sprout_registry()
-			accept_event()
-			return
+    if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == Key.KEY_V:
+            _end_turn()
+            accept_event()
+            return
 
-		if event.keycode == Key.KEY_C:
-			_debug_print_clusters()
-			accept_event()
-			return
-
-		if event.keycode == Key.KEY_B:
-			_start_debug_battle()
-			accept_event()
-			return
-
-	if Input.is_action_just_pressed("ui_cancel"):
-		if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
-			_hide_sprout_registry()
-			accept_event()
-			return
-		_go_back_to_main_menu()
-		accept_event()
-		return
-
-	if _phase == PHASE_COMMUNE and _commune_overlay.visible:
-		if event is InputEventKey and event.pressed and not event.echo:
-			match event.keycode:
-				Key.KEY_1:
-					_select_commune_choice(0)
-					accept_event()
-					return
-				Key.KEY_2:
-					_select_commune_choice(1)
-					accept_event()
-					return
-				Key.KEY_3:
-					_select_commune_choice(2)
-					accept_event()
-					return
-		return
-
-	if _phase != PHASE_PLAYER:
-		return
-
-	if Input.is_action_just_pressed("ui_accept"):
-		if _selector_r >= 0 and _selector_r < GRID_HEIGHT and _selector_q >= 0 and _selector_q < GRID_WIDTH:
-			if _decay_grid[_selector_r][_selector_q]:
-				_start_decay_attack_battle(_selector_q, _selector_r)
-				accept_event()
-				return
-
-		_place_tile_at_selector()
-		accept_event()
-		return
-
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == Key.KEY_V:
-			_end_turn()
-			accept_event()
-			return
-
-	if Input.is_action_just_pressed("ui_left"):
-		_move_selector(-1, 0)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_right"):
-		_move_selector(1, 0)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_up"):
-		_move_selector(0, -1)
-		accept_event()
-	elif Input.is_action_just_pressed("ui_down"):
-		_move_selector(0, 1)
-		accept_event()
+    if Input.is_action_just_pressed("ui_left"):
+        _move_selector(-1, 0)
+        accept_event()
+    elif Input.is_action_just_pressed("ui_right"):
+        _move_selector(1, 0)
+        accept_event()
+    elif Input.is_action_just_pressed("ui_up"):
+        _move_selector(0, -1)
+        accept_event()
+    elif Input.is_action_just_pressed("ui_down"):
+        _move_selector(0, 1)
+        accept_event()
 
 func _init_tiles() -> void:
 	_tiles.clear()
@@ -824,41 +844,117 @@ func _spawn_sprout_from_grove(q: int, r: int) -> void:
 	_update_sprout_registry_view()
 
 func _update_sprout_registry_view() -> void:
-	if not is_instance_valid(_sprout_registry_list):
-		return
+    if not is_instance_valid(_sprout_registry_list):
+        return
 
-	for child in _sprout_registry_list.get_children():
-		child.queue_free()
+    for child in _sprout_registry_list.get_children():
+        child.queue_free()
 
-	if _sprouts.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = "No sprouts yet."
-		_sprout_registry_list.add_child(empty_label)
-		return
+    if _sprouts.is_empty():
+        _sprout_registry_selected_index = 0
+        var empty_label := Label.new()
+        empty_label.text = "No sprouts yet."
+        _sprout_registry_list.add_child(empty_label)
+        return
 
-	for sprout in _sprouts:
-		var label := Label.new()
-		var sprout_id := str(sprout.get("id", "sprout"))
-		var level := int(sprout.get("level", 1))
-		var max_hp := int(sprout.get("max_hp", 0))
-		var current_hp := int(sprout.get("current_hp", 0))
-		var q := int(sprout.get("q", -1))
-		var r := int(sprout.get("r", -1))
-		var is_dead := bool(sprout.get("dead", false))
+    _sprout_registry_selected_index = clampi(
+        _sprout_registry_selected_index,
+        0,
+        _sprouts.size() - 1
+    )
 
-		var text := "%s (Lv %d) HP %d/%d at (%d, %d)" % [
-			sprout_id,
-			level,
-			current_hp,
-			max_hp,
-			q,
-			r
-		]
-		if is_dead:
-			text += " [DEAD]"
+    for i in range(_sprouts.size()):
+        var sprout := _sprouts[i]
+        var label := Label.new()
+        var sprout_id := str(sprout.get("id", "sprout"))
+        var level := int(sprout.get("level", 1))
+        var max_hp := int(sprout.get("max_hp", 0))
+        var current_hp := int(sprout.get("current_hp", 0))
+        var q := int(sprout.get("q", -1))
+        var r := int(sprout.get("r", -1))
+        var is_dead := bool(sprout.get("dead", false))
 
-		label.text = text
-		_sprout_registry_list.add_child(label)
+        var text := "%s (Lv %d) HP %d/%d at (%d, %d)" % [
+            sprout_id,
+            level,
+            current_hp,
+            max_hp,
+            q,
+            r
+        ]
+        if is_dead:
+            text += " [DEAD]"
+
+        if i == _sprout_registry_selected_index:
+            text = "➤ " + text
+        else:
+            text = "   " + text
+
+        label.text = text
+        _sprout_registry_list.add_child(label)
+
+func _sprout_registry_move_selection(delta: int) -> void:
+    if _sprouts.is_empty():
+        _sprout_registry_selected_index = 0
+        return
+
+    _sprout_registry_selected_index += delta
+    _sprout_registry_selected_index = clampi(
+        _sprout_registry_selected_index,
+        0,
+        _sprouts.size() - 1
+    )
+    _update_sprout_registry_view()
+
+func _get_soul_seed_cost_for_next_level(current_level: int) -> int:
+    if current_level < 1:
+        return SOUL_SEED_COST_BASE
+    return SOUL_SEED_COST_BASE + (current_level - 1) * SOUL_SEED_COST_PER_LEVEL
+
+func _try_level_selected_sprout_with_soul_seeds() -> void:
+    if _sprouts.is_empty():
+        print("ShroudWorld: no sprouts to level")
+        return
+
+    _sprout_registry_selected_index = clampi(
+        _sprout_registry_selected_index,
+        0,
+        _sprouts.size() - 1
+    )
+
+    var sprout := _sprouts[_sprout_registry_selected_index]
+    var current_level := int(sprout.get("level", 1))
+    var cost := _get_soul_seed_cost_for_next_level(current_level)
+
+    if _res_souls < cost:
+        print(
+            "ShroudWorld: not enough Soul Seeds to level sprout (need %d, have %d)" % [
+                cost,
+                _res_souls
+            ]
+        )
+        return
+
+    _res_souls -= cost
+    current_level += 1
+    sprout["level"] = current_level
+
+    var new_max_hp := 60 + current_level * 10
+    sprout["max_hp"] = new_max_hp
+    sprout["current_hp"] = new_max_hp
+    sprout["dead"] = false
+
+    _update_resource_label()
+    _update_sprout_registry_view()
+
+    print(
+        "ShroudWorld: leveled sprout %s (instance %d) to level %d for %d Soul Seeds" % [
+            str(sprout.get("id", "sprout")),
+            int(sprout.get("instance_id", -1)),
+            current_level,
+            cost
+        ]
+    )
 
 func _regen_sprouts_for_turn() -> void:
 	if _sprouts.is_empty():
