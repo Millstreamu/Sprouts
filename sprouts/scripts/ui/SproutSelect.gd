@@ -86,7 +86,7 @@ func _populate_sprouts() -> void:
 			name_label = card.get_node("NameLabel") as Label
 
 		var sprout_name := str(entry.get("name", ""))
-		var unlocked := entry.get("unlocked", false)
+                var unlocked := bool(entry.get("unlocked", false))
 		var id := str(entry.get("id", ""))
 
 		if name_label:
@@ -182,13 +182,13 @@ func _continue_if_ready() -> void:
 		_update_status_label()
 		return
 
-	var run_context_path := NodePath("/root/RunContext")
-	if get_tree().has_node(run_context_path):
-		var ctx := get_tree().get_node(run_context_path) as RunContext
-		ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
-		ctx.debug_print()
-	else:
-		print("SproutSelect: WARNING - RunContext singleton not found")
+        var run_context_path := NodePath("/root/RunContext")
+        var ctx := get_node_or_null(run_context_path) as RunContext
+        if ctx != null:
+                ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
+                ctx.debug_print()
+        else:
+                print("SproutSelect: WARNING - RunContext singleton not found")
 
 	print("SproutSelect: CONTINUE with sprouts: %s" % ", ".join(_selected_sprout_ids))
 	get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
