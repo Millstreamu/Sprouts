@@ -81,18 +81,22 @@ func _get_category_weight_for(totem_id: String, difficulty: String, category: St
 	return base_weight * diff_mult
 
 func _compute_tile_weight(tile_def: Dictionary, totem_id: String, difficulty: String) -> float:
-	var category: String = str(tile_def.get("category", ""))
+	var category: String = String(tile_def.get("category", ""))
 	if category.is_empty():
 		return 0.0
+
 	var weight: float = _get_category_weight_for(totem_id, difficulty, category)
 	if weight <= 0.0:
 		return 0.0
-	var tags_data := tile_def.get("tags", [])
+
+	var tags_data: Variant = tile_def.get("tags", [])
 	if tags_data is Array:
 		var tags: Array = tags_data
 		if "unique" in tags:
 			weight *= 0.7
+
 	return weight
+
 
 func _weighted_pick_indices(weights: Array[float], count: int) -> Array[int]:
 	var indices: Array[int] = []
