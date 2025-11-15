@@ -198,8 +198,9 @@ func _continue_if_ready() -> void:
 		return
 	var current: Dictionary = _totems[_current_totem_index]
 	var totem_id: String = str(current.get("id", ""))
-	if Engine.has_singleton("RunContext"):
-		var ctx := RunContext
+	var run_context_path := NodePath("/root/RunContext")
+	if get_tree().has_node(run_context_path):
+		var ctx := get_tree().get_node(run_context_path) as RunContext
 		ctx.selected_totem_id = totem_id
 		ctx.selected_difficulty = _selected_difficulty
 		ctx.selected_sprout_ids.clear()
