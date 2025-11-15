@@ -33,6 +33,7 @@ battle_overlay_layer_path = NodePath("BattleOverlayLayer")
 run_end_overlay_path = NodePath("RunEndOverlay")
 run_end_result_label_path = NodePath("RunEndOverlay/Content/ResultLabel")
 run_end_hint_label_path = NodePath("RunEndOverlay/Content/HintLabel")
+run_end_stats_list_path = NodePath("RunEndOverlay/Content/StatsList")
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -99,6 +100,9 @@ theme_override_constants/separation = 12
 [node name="ResultLabel" type="Label" parent="RunEndOverlay/Content"]
 text = "Run End"
 horizontal_alignment = 1
+
+[node name="StatsList" type="VBoxContainer" parent="RunEndOverlay/Content"]
+alignment = 0
 
 [node name="HintLabel" type="Label" parent="RunEndOverlay/Content"]
 text = "Press Space to return to Main Menu"
