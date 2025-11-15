@@ -7,6 +7,7 @@ class_name ShroudWorldScreen
 @export var hex_grid_path: NodePath
 @export var selector_path: NodePath
 @export var tile_info_label_path: NodePath
+@export var tile_info_panel_path: NodePath
 @export var world_hud_path: NodePath
 @export var back_button_path: NodePath
 @export var commune_overlay_path: NodePath
@@ -29,6 +30,7 @@ class_name ShroudWorldScreen
 @onready var _hex_grid: Node2D = get_node(hex_grid_path) as Node2D
 @onready var _selector: Node2D = get_node(selector_path) as Node2D
 @onready var _tile_info_label: Label = get_node(tile_info_label_path) as Label
+@onready var _tile_info_panel: WorldTileInfoPanel = get_node(tile_info_panel_path) as WorldTileInfoPanel
 @onready var _world_hud: WorldHUD = get_node(world_hud_path) as WorldHUD
 @onready var _back_button: Button = get_node(back_button_path) as Button
 @onready var _commune_overlay: Control = get_node(commune_overlay_path) as Control
@@ -71,6 +73,7 @@ var _decay_count: int = 0
 var _current_tile_id: String = ""
 var _current_tile_name: String = ""
 var _has_placed_this_turn: bool = false
+var _tile_info_enabled: bool = true
 
 var _sprouts: Array = []
 var _sprout_registry_selected_index: int = 0
@@ -226,6 +229,9 @@ func _ready() -> void:
     if is_instance_valid(_world_hud):
         _world_hud.next_turn_requested.connect(_on_hud_next_turn_requested)
         _refresh_hud_resources()
+    if is_instance_valid(_tile_info_panel):
+        _tile_info_panel.show_empty()
+        _tile_info_panel.visible = _tile_info_enabled
     _spawn_initial_decay_sources()
     _init_totems_for_run()
     _recompute_clusters()
@@ -318,6 +324,14 @@ func _input(event: InputEvent) -> void:
             return
         if event.keycode == Key.KEY_V:
             _try_end_turn_from_input()
+            accept_event()
+            return
+        if event.keycode == Key.KEY_M:
+            _tile_info_enabled = not _tile_info_enabled
+            if is_instance_valid(_tile_info_panel):
+                _tile_info_panel.visible = _tile_info_enabled
+                if _tile_info_enabled:
+                    _refresh_tile_info_for_cursor()
             accept_event()
             return
 
@@ -586,39 +600,212 @@ func _flood_fill_cluster(start_q: int, start_r: int, category: String) -> void:
 	_clusters[cluster_id] = cluster_data
 
 func _get_current_tile_selection_text() -> String:
-	if _current_tile_id.is_empty():
-		return "Current Tile: None"
-	return "Current Tile: %s" % _current_tile_name
+    if _current_tile_id.is_empty():
+        return "Current Tile: None"
+    return "Current Tile: %s" % _current_tile_name
+
+func _get_cursor_coords() -> Vector2i:
+    return Vector2i(_selector_q, _selector_r)
+
+func _build_tile_info_for(q: int, r: int) -> Dictionary:
+    var info: Dictionary = {
+        "name": "Unknown",
+        "category": "Unknown",
+        "tags": [],
+        "cluster_type": "N/A",
+        "cluster_size": 0,
+        "state": "Unknown",
+        "output_summary": "N/A",
+        "description": ""
+    }
+
+    if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
+        info["name"] = "Outside Map"
+        info["category"] = "N/A"
+        info["state"] = "Empty"
+        return info
+
+    var tile_id := ""
+    if _tiles.size() > r and _tiles[r].size() > q:
+        tile_id = str(_tiles[r][q])
+
+    var is_decay := false
+    if _decay_grid.size() > r and _decay_grid[r].size() > q:
+        is_decay = bool(_decay_grid[r][q])
+
+    if tile_id.is_empty() and not is_decay:
+        info["name"] = "Empty Tile"
+        info["category"] = "None"
+        info["state"] = "Empty"
+        return info
+
+    if is_decay:
+        info["name"] = "Creeping Decay"
+        info["category"] = "Decay"
+        info["tags"] = ["DECAY"]
+        info["state"] = "Decay"
+        var decay_desc := "Spreading corruption. Destroys life tiles and totems if left unchecked."
+        if not tile_id.is_empty():
+            var target_name := tile_id
+            if _tile_defs_by_id.has(tile_id):
+                var target_def := _tile_defs_by_id[tile_id]
+                target_name = str(target_def.get("name", tile_id))
+            decay_desc += " Currently overrunning %s." % target_name
+        info["description"] = decay_desc
+        return info
+
+    var display_name := tile_id
+    var category := "Unknown"
+    var description := ""
+    var tags: Array[String] = []
+
+    if _tile_defs_by_id.has(tile_id):
+        var def := _tile_defs_by_id[tile_id]
+        display_name = str(def.get("name", tile_id))
+        category = str(def.get("category", "Unknown"))
+        description = str(def.get("description", ""))
+        var def_tags := def.get("tags", [])
+        if def_tags is Array:
+            for tag in def_tags:
+                tags.append(str(tag))
+        elif def_tags is PackedStringArray:
+            var packed_tags := def_tags as PackedStringArray
+            for tag in packed_tags:
+                tags.append(tag)
+    else:
+        display_name = tile_id
+        category = "Unknown"
+
+    var state := "Normal"
+    if tile_id == TILE_ID_OVERGROWTH:
+        state = "Overgrowth"
+        var turns_until_grove := 3
+        if _overgrowth_age.size() > r and _overgrowth_age[r].size() > q:
+            turns_until_grove = max(0, 3 - int(_overgrowth_age[r][q]))
+        if turns_until_grove < 0:
+            turns_until_grove = 0
+        var overgrowth_note := "Overgrowth that will become a Grove soon."
+        if turns_until_grove > 0:
+            overgrowth_note = "Overgrowth that will become a Grove in %d turn(s)." % turns_until_grove
+        if description.is_empty():
+            description = overgrowth_note
+        else:
+            description = "%s\n%s" % [description, overgrowth_note]
+        if not tags.has("OVERGROWTH"):
+            tags.append("OVERGROWTH")
+    elif tile_id == TILE_ID_GROVE:
+        state = "Grove"
+        var grove_note := "A fragile grove that can spawn sprouts but is vulnerable to Decay."
+        if description.is_empty():
+            description = grove_note
+        else:
+            description = "%s\n%s" % [description, grove_note]
+        if not tags.has("GROVE"):
+            tags.append("GROVE")
+
+    if description.is_empty():
+        description = "No description available."
+
+    info["name"] = display_name
+    info["category"] = category
+    info["tags"] = tags
+    info["state"] = state
+    info["output_summary"] = _build_output_summary_for_tile(tile_id)
+    info["description"] = description
+
+    var cluster_type := "N/A"
+    var cluster_size := 0
+    if _cluster_ids.size() > r and _cluster_ids[r].size() > q:
+        var cluster_id := int(_cluster_ids[r][q])
+        if cluster_id != -1 and _clusters.has(cluster_id):
+            var cluster := _clusters[cluster_id]
+            cluster_type = str(cluster.get("category", "N/A"))
+            cluster_size = int(cluster.get("size", 0))
+
+    if cluster_type == "N/A" and (category == "Nature" or category == "Water" or category == "Earth"):
+        cluster_type = category
+
+    info["cluster_type"] = cluster_type
+    info["cluster_size"] = cluster_size
+
+    return info
+
+func _build_output_summary_for_tile(tile_id: String) -> String:
+    if tile_id.is_empty():
+        return "N/A"
+    if not _tile_defs_by_id.has(tile_id):
+        return "N/A"
+
+    var def := _tile_defs_by_id[tile_id]
+    var base_output := def.get("base_output", {})
+    if not (base_output is Dictionary):
+        return "N/A"
+
+    var output_dict := base_output as Dictionary
+    var nature_out := int(output_dict.get("nature", 0))
+    var water_out := int(output_dict.get("water", 0))
+    var earth_out := int(output_dict.get("earth", 0))
+    var souls_out := int(output_dict.get("souls", 0))
+
+    var parts: Array[String] = []
+    if nature_out != 0:
+        parts.append("Nature %+d/turn" % nature_out)
+    if earth_out != 0:
+        parts.append("Earth %+d/turn" % earth_out)
+    if water_out != 0:
+        parts.append("Water %+d/turn" % water_out)
+    if souls_out != 0:
+        parts.append("Soul Seeds %+d/turn" % souls_out)
+
+    if parts.is_empty():
+        return "N/A"
+
+    return ", ".join(parts)
+
+func _refresh_tile_info_for_cursor() -> void:
+    if not _tile_info_enabled:
+        return
+    if not is_instance_valid(_tile_info_panel):
+        return
+
+    var coords := _get_cursor_coords()
+    var info := _build_tile_info_for(coords.x, coords.y)
+    _tile_info_panel.show_tile(info)
 
 func _update_tile_info_for_selector() -> void:
-	var selection_text := _get_current_tile_selection_text()
-	var q := _selector_q
-	var r := _selector_r
+    var selection_text := _get_current_tile_selection_text()
+    var q := _selector_q
+    var r := _selector_r
 
-	if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
-		_tile_info_label.text = "%s\nTile: None" % selection_text
-		return
+    var label_text := "%s\nTile: None" % selection_text
 
-	var tile_id := str(_tiles[r][q])
-	if tile_id == "":
-		_tile_info_label.text = "%s\nTile: None" % selection_text
-		return
+    if r >= 0 and r < GRID_HEIGHT and q >= 0 and q < GRID_WIDTH:
+        var tile_id := str(_tiles[r][q])
+        var is_decay := false
+        if _decay_grid.size() > r and _decay_grid[r].size() > q:
+            is_decay = bool(_decay_grid[r][q])
+        if tile_id != "" or is_decay:
+            var tile_name := "None"
+            if is_decay:
+                tile_name = "Creeping Decay"
+            elif _tile_defs_by_id.has(tile_id):
+                var def := _tile_defs_by_id[tile_id]
+                tile_name = str(def.get("name", tile_id))
+            else:
+                tile_name = tile_id
+            label_text = "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
+            if not is_decay:
+                var cluster_id := _cluster_ids[r][q]
+                if cluster_id != -1 and _clusters.has(cluster_id):
+                    var c := _clusters[cluster_id]
+                    var cat := str(c.get("category", ""))
+                    var size := int(c.get("size", 0))
+                    label_text += " | Cluster: %s size %d" % [cat, size]
 
-	var tile_name := tile_id
-	if _tile_defs_by_id.has(tile_id):
-		var def := _tile_defs_by_id[tile_id]
-		tile_name = str(def.get("name", tile_id))
+    if is_instance_valid(_tile_info_label):
+        _tile_info_label.text = label_text
 
-	var info_text := "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
-
-	var cluster_id := _cluster_ids[r][q]
-	if cluster_id != -1 and _clusters.has(cluster_id):
-		var c := _clusters[cluster_id]
-		var cat := str(c.get("category", ""))
-		var size := int(c.get("size", 0))
-		info_text += " | Cluster: %s size %d" % [cat, size]
-
-	_tile_info_label.text = info_text
+    _refresh_tile_info_for_cursor()
 
 func _debug_print_clusters() -> void:
 	print("ShroudWorld: debug clusters, count = %d" % _clusters.size())
