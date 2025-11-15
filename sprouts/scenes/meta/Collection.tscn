@@ -43,6 +43,7 @@ grow_vertical = 2
 size_flags_vertical = 3
 
 [node name="CardGrid" type="GridContainer" parent="Scroll"]
+custom_minimum_size = Vector2(800, 700)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

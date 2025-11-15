@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://nsylrn8wy3p8"]
+[gd_scene load_steps=3 format=3 uid="uid://nsylrn8wy3p8"]
 
 [ext_resource type="Script" uid="uid://dcis0j7mihsdy" path="res://scripts/ui/MainMenu.gd" id="1_sljng"]
+[ext_resource type="PackedScene" uid="uid://byduq8qe85ytm" path="res://scenes/ui/CardBase.tscn" id="2_ydaap"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -30,3 +31,9 @@ text = "Settings"
 [node name="ExitButton" type="Button" parent="MenuContainer"]
 layout_mode = 2
 text = "Exit"
+
+[node name="CardBase" parent="." instance=ExtResource("2_ydaap")]
+offset_left = 436.0
+offset_top = 297.0
+offset_right = 596.0
+offset_bottom = 497.0
