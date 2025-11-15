@@ -78,6 +78,7 @@ var _cluster_ids: Array = []
 var _clusters: Dictionary = {}
 var _next_cluster_id: int = 0
 const CLUSTER_THRESHOLDS: Array[int] = [3, 6, 12, 24]
+const RUN_CONTEXT_PATH := NodePath("/root/RunContext")
 # cluster_id -> highest threshold already rewarded for that cluster
 var _cluster_rewards: Dictionary = {}
 
@@ -143,8 +144,8 @@ func _ready() -> void:
     _update_sprout_registry_view()
     if is_instance_valid(_battle_overlay_layer):
         _battle_overlay_layer.visible = false
-    if Engine.has_singleton("RunContext"):
-        var ctx := RunContext
+    if get_tree().has_node(RUN_CONTEXT_PATH):
+        var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
         ctx.debug_print()
         print(
             "ShroudWorld: starting run with totem=%s difficulty=%d sprouts=%s" % [
@@ -348,11 +349,11 @@ func _get_cluster_soul_reward(category: String, threshold: int) -> int:
             return 1
 
 func _try_spawn_sprout_from_cluster(q: int, r: int, category: String, threshold: int) -> bool:
-    if not Engine.has_singleton("RunContext"):
+    if not get_tree().has_node(RUN_CONTEXT_PATH):
         print("ShroudWorld: cannot spawn sprout from cluster, RunContext not found")
         return false
 
-    var ctx := RunContext
+    var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
     if ctx.selected_sprout_ids.is_empty():
         print("ShroudWorld: no selected sprouts in RunContext to spawn (cluster reward)")
         return false
@@ -490,8 +491,8 @@ func _init_decay_grid() -> void:
 
 func _get_initial_decay_sources_for_difficulty() -> int:
     var difficulty: int = 0
-    if Engine.has_singleton("RunContext"):
-        var ctx := RunContext
+    if get_tree().has_node(RUN_CONTEXT_PATH):
+        var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
         difficulty = ctx.selected_difficulty
     match difficulty:
         0:
@@ -660,11 +661,11 @@ func _transform_overgrowth_to_grove(q: int, r: int) -> void:
         _hex_grid.update()
 
 func _spawn_sprout_from_grove(q: int, r: int) -> void:
-    if not Engine.has_singleton("RunContext"):
+    if not get_tree().has_node(RUN_CONTEXT_PATH):
         print("ShroudWorld: cannot spawn sprout, RunContext not found")
         return
 
-    var ctx := RunContext
+    var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
     if ctx.selected_sprout_ids.is_empty():
         print("ShroudWorld: no selected sprouts in RunContext to spawn")
         return

@@ -182,8 +182,9 @@ func _continue_if_ready() -> void:
 		_update_status_label()
 		return
 
-	if Engine.has_singleton("RunContext"):
-		var ctx := RunContext
+	var run_context_path := NodePath("/root/RunContext")
+	if get_tree().has_node(run_context_path):
+		var ctx := get_tree().get_node(run_context_path) as RunContext
 		ctx.selected_sprout_ids = _selected_sprout_ids.duplicate()
 		ctx.debug_print()
 	else:
