@@ -1,0 +1,74 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/WorldTileInfoPanel.gd" id="1_vnvxh"]
+
+[node name="WorldTileInfoPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = 64.0
+offset_right = -32.0
+offset_bottom = -64.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vnvxh")
+title_label_path = NodePath("Panel/Content/TitleLabel")
+category_label_path = NodePath("Panel/Content/CategoryLabel")
+tags_label_path = NodePath("Panel/Content/TagsLabel")
+cluster_label_path = NodePath("Panel/Content/ClusterLabel")
+state_label_path = NodePath("Panel/Content/StateLabel")
+output_label_path = NodePath("Panel/Content/OutputLabel")
+description_label_path = NodePath("Panel/Content/DescriptionLabel")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="Panel/Content"]
+text = "No tile"
+size_flags_horizontal = 3
+
+[node name="CategoryLabel" type="Label" parent="Panel/Content"]
+text = "Category: N/A"
+size_flags_horizontal = 3
+
+[node name="TagsLabel" type="Label" parent="Panel/Content"]
+text = "Tags: N/A"
+size_flags_horizontal = 3
+
+[node name="ClusterLabel" type="Label" parent="Panel/Content"]
+text = "Cluster: N/A"
+size_flags_horizontal = 3
+
+[node name="StateLabel" type="Label" parent="Panel/Content"]
+text = "State: Unknown"
+size_flags_horizontal = 3
+
+[node name="OutputLabel" type="Label" parent="Panel/Content"]
+text = "Output: N/A"
+size_flags_horizontal = 3
+
+[node name="DescriptionLabel" type="Label" parent="Panel/Content"]
+text = ""
+size_flags_horizontal = 3
+autowrap_mode = 2

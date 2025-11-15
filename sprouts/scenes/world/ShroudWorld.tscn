@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/ShroudWorld.gd" id="1_u7lpo"]
 [ext_resource type="Script" path="res://scripts/world/HexGrid.gd" id="2_gyr5m"]
 [ext_resource type="Script" path="res://scripts/world/Selector.gd" id="3_vf1yr"]
 [ext_resource type="PackedScene" path="res://scenes/world/ui/WorldHUD.tscn" id="4_qsm6o"]
+[ext_resource type="PackedScene" path="res://scenes/world/ui/WorldTileInfoPanel.tscn" id="5_5y4nf"]
 
 [node name="ShroudWorld" type="Control"]
 layout_mode = 3
@@ -19,6 +20,7 @@ world_root_path = NodePath("WorldRoot")
 hex_grid_path = NodePath("WorldRoot/HexGrid")
 selector_path = NodePath("WorldRoot/Selector")
 tile_info_label_path = NodePath("TilePanel/TileInfoLabel")
+tile_info_panel_path = NodePath("TileInfoPanel")
 world_hud_path = NodePath("WorldHUDInstance")
 back_button_path = NodePath("BackButton")
 commune_overlay_path = NodePath("CommuneOverlay")
@@ -133,6 +135,8 @@ offset_top = 12.0
 offset_right = 188.0
 offset_bottom = 60.0
 text = "Current Tile: (placeholder)"
+
+[node name="TileInfoPanel" parent="." instance=ExtResource("5_5y4nf")]
 
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1
