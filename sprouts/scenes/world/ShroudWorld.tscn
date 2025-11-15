@@ -30,6 +30,9 @@ tile_choice_button_2_path = NodePath("CommuneOverlay/CommunePanel/TileChoiceCont
 sprout_registry_overlay_path = NodePath("SproutRegistryOverlay")
 sprout_registry_list_path = NodePath("SproutRegistryOverlay/SproutPanel/SproutScroll/SproutList")
 battle_overlay_layer_path = NodePath("BattleOverlayLayer")
+run_end_overlay_path = NodePath("RunEndOverlay")
+run_end_result_label_path = NodePath("RunEndOverlay/Content/ResultLabel")
+run_end_hint_label_path = NodePath("RunEndOverlay/Content/HintLabel")
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -58,6 +61,48 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 z_index = 100
+
+[node name="RunEndOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+z_index = 200
+
+[node name="Background" type="ColorRect" parent="RunEndOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Content" type="VBoxContainer" parent="RunEndOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -80.0
+offset_right = 180.0
+offset_bottom = 80.0
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="ResultLabel" type="Label" parent="RunEndOverlay/Content"]
+text = "Run End"
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="RunEndOverlay/Content"]
+text = "Press Space to return to Main Menu"
+horizontal_alignment = 1
 
 [node name="WorldRoot" type="Node2D" parent="."]
 position = Vector2(512, 320)

@@ -19,6 +19,9 @@ class_name ShroudWorldScreen
 @export var sprout_registry_overlay_path: NodePath
 @export var sprout_registry_list_path: NodePath
 @export var battle_overlay_layer_path: NodePath
+@export var run_end_overlay_path: NodePath
+@export var run_end_result_label_path: NodePath
+@export var run_end_hint_label_path: NodePath
 
 @onready var _turn_label: Label = get_node(turn_label_path) as Label
 @onready var _phase_label: Label = get_node(phase_label_path) as Label
@@ -39,6 +42,9 @@ class_name ShroudWorldScreen
 @onready var _sprout_registry_overlay: Control = get_node(sprout_registry_overlay_path) as Control
 @onready var _sprout_registry_list: VBoxContainer = get_node(sprout_registry_list_path) as VBoxContainer
 @onready var _battle_overlay_layer: Control = get_node(battle_overlay_layer_path) as Control
+@onready var _run_end_overlay: Control = get_node(run_end_overlay_path) as Control
+@onready var _run_end_result_label: Label = get_node(run_end_result_label_path) as Label
+@onready var _run_end_hint_label: Label = get_node(run_end_hint_label_path) as Label
 
 const GRID_WIDTH: int = 7
 const GRID_HEIGHT: int = 5
@@ -73,6 +79,17 @@ var _pending_battle_mode: String = ""
 var _pending_battle_target_q: int = -1
 var _pending_battle_target_r: int = -1
 
+# Decay Totems and player Totem
+var _player_totem_q: int = -1
+var _player_totem_r: int = -1
+
+# Each element: { "q": int, "r": int, "alive": bool }
+var _decay_totems: Array = []
+var _alive_decay_totem_count: int = 0
+
+var _run_over: bool = false
+var _run_result: String = ""
+
 # Cluster detection
 var _cluster_ids: Array = []
 var _clusters: Dictionary = {}
@@ -97,15 +114,17 @@ var _res_earth: int = 0
 var _res_souls: int = 0
 
 func _ready() -> void:
-	_back_button.pressed.connect(_on_back_pressed)
-	_tile_choice_buttons = [
-		_tile_choice_button_0,
-		_tile_choice_button_1,
-		_tile_choice_button_2
-	]
-	_tile_choice_button_0.pressed.connect(func() -> void:
-		_select_commune_choice(0)
-	)
+        _back_button.pressed.connect(_on_back_pressed)
+        _tile_choice_buttons = [
+                _tile_choice_button_0,
+                _tile_choice_button_1,
+                _tile_choice_button_2
+        ]
+        _run_over = false
+        _run_result = ""
+        _tile_choice_button_0.pressed.connect(func() -> void:
+                _select_commune_choice(0)
+        )
 	_tile_choice_button_1.pressed.connect(func() -> void:
 		_select_commune_choice(1)
 	)
@@ -126,8 +145,9 @@ func _ready() -> void:
 	_res_water = 0
 	_res_earth = 0
 	_res_souls = 0
-	_spawn_initial_decay_sources()
-	_recompute_clusters()
+        _spawn_initial_decay_sources()
+        _init_totems_for_run()
+        _recompute_clusters()
 	_apply_cluster_threshold_rewards()
 	_update_turn_and_phase_labels()
 	_update_tile_panel()
@@ -142,9 +162,11 @@ func _ready() -> void:
 	if is_instance_valid(_sprout_registry_overlay):
 		_sprout_registry_overlay.visible = false
 	_update_sprout_registry_view()
-	if is_instance_valid(_battle_overlay_layer):
-		_battle_overlay_layer.visible = false
-	if get_tree().has_node(RUN_CONTEXT_PATH):
+        if is_instance_valid(_battle_overlay_layer):
+                _battle_overlay_layer.visible = false
+        if is_instance_valid(_run_end_overlay):
+                _run_end_overlay.visible = false
+        if get_tree().has_node(RUN_CONTEXT_PATH):
 		var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
 		ctx.debug_print()
 		print(
@@ -159,8 +181,15 @@ func _ready() -> void:
 	print("ShroudWorld: ready")
 
 func _input(event: InputEvent) -> void:
-	if _battle_overlay_active:
-		return
+        if _run_over:
+                if Input.is_action_just_pressed("ui_accept"):
+                        print("ShroudWorld: returning to Main Menu after run end")
+                        get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+                        accept_event()
+                return
+
+        if _battle_overlay_active:
+                return
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == Key.KEY_R:
@@ -505,11 +534,11 @@ func _get_initial_decay_sources_for_difficulty() -> int:
 			return 1
 
 func _spawn_initial_decay_sources() -> void:
-	var count := _get_initial_decay_sources_for_difficulty()
-	var attempts := 0
-	var max_attempts := 100
+        var count := _get_initial_decay_sources_for_difficulty()
+        var attempts := 0
+        var max_attempts := 100
 
-	while count > 0 and attempts < max_attempts:
+        while count > 0 and attempts < max_attempts:
 		attempts += 1
 		var edge := randi() % 4
 		var q := 0
@@ -534,10 +563,107 @@ func _spawn_initial_decay_sources() -> void:
 		_decay_grid[r][q] = true
 		_decay_count += 1
 		count -= 1
-		print("ShroudWorld: spawned initial decay at (%d, %d)" % [q, r])
+                print("ShroudWorld: spawned initial decay at (%d, %d)" % [q, r])
 
-	if is_instance_valid(_hex_grid):
-		_hex_grid.update()
+        if is_instance_valid(_hex_grid):
+                _hex_grid.update()
+
+func _trigger_run_victory() -> void:
+        if _run_over:
+                return
+        _run_over = true
+        _run_result = "victory"
+
+        if is_instance_valid(_run_end_overlay):
+                _run_end_overlay.visible = true
+        if is_instance_valid(_run_end_result_label):
+                _run_end_result_label.text = "Victory – All Decay Totems destroyed"
+        if is_instance_valid(_run_end_hint_label):
+                _run_end_hint_label.text = "Press Space to return to Main Menu"
+
+        print("ShroudWorld: run ended with VICTORY")
+
+func _trigger_run_defeat(reason: String) -> void:
+        if _run_over:
+                return
+        _run_over = true
+        _run_result = "defeat"
+
+        if is_instance_valid(_run_end_overlay):
+                _run_end_overlay.visible = true
+        if is_instance_valid(_run_end_result_label):
+                match reason:
+                        "totem_consumed":
+                                _run_end_result_label.text = "Defeat – Totem consumed by Decay"
+                        "no_valid_placements":
+                                _run_end_result_label.text = "Defeat – No valid placements remain"
+                        _:
+                                _run_end_result_label.text = "Defeat"
+        if is_instance_valid(_run_end_hint_label):
+                _run_end_hint_label.text = "Press Space to return to Main Menu"
+
+        print("ShroudWorld: run ended with DEFEAT (%s)" % reason)
+
+func _init_totems_for_run() -> void:
+        _decay_totems.clear()
+        _alive_decay_totem_count = 0
+
+        _player_totem_q = GRID_WIDTH / 2
+        _player_totem_r = GRID_HEIGHT / 2
+
+        if _player_totem_r >= 0 and _player_totem_r < GRID_HEIGHT and _player_totem_q >= 0 and _player_totem_q < GRID_WIDTH:
+                if _decay_grid[_player_totem_r][_player_totem_q]:
+                        _decay_grid[_player_totem_r][_player_totem_q] = false
+                        _decay_count = max(_decay_count - 1, 0)
+
+        var totem_count: int = 1
+        if Engine.has_singleton("RunContext"):
+                var ctx := RunContext
+                var difficulty_value := ctx.selected_difficulty
+                var value_type := typeof(difficulty_value)
+                if value_type == TYPE_STRING:
+                        var diff := str(difficulty_value).to_lower()
+                        match diff:
+                                "easy":
+                                        totem_count = 1
+                                "medium":
+                                        totem_count = 2
+                                "hard":
+                                        totem_count = 3
+                                _:
+                                        totem_count = 1
+                else:
+                        var diff_int := int(difficulty_value)
+                        match diff_int:
+                                0:
+                                        totem_count = 1
+                                1:
+                                        totem_count = 2
+                                2:
+                                        totem_count = 3
+                                _:
+                                        totem_count = 1
+
+        for i in totem_count:
+                var q := GRID_WIDTH - 4 + i
+                var r := GRID_HEIGHT / 2
+
+                q = clampi(q, 0, GRID_WIDTH - 1)
+                r = clampi(r, 0, GRID_HEIGHT - 1)
+
+                if not _decay_grid[r][q]:
+                        _decay_grid[r][q] = true
+                        _decay_count += 1
+
+                var data := {
+                        "q": q,
+                        "r": r,
+                        "alive": true
+                }
+                _decay_totems.append(data)
+
+        _alive_decay_totem_count = _decay_totems.size()
+        print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
 
 func _load_tile_defs() -> void:
 	_tile_defs.clear()
@@ -803,15 +929,21 @@ func _end_turn() -> void:
 		print("ShroudWorld: must place a tile before ending the turn")
 		return
 
-	_generate_resources_for_turn()
-	_spread_decay_for_turn()
-	_advance_overgrowth_and_groves()
-	_recompute_clusters()
-	_apply_cluster_threshold_rewards()
-	_regen_sprouts_for_turn()
-	_turn_number += 1
-	print("ShroudWorld: End turn -> Turn %d" % _turn_number)
-	_show_commune()
+        _generate_resources_for_turn()
+        _spread_decay_for_turn()
+        if _run_over:
+                return
+        _advance_overgrowth_and_groves()
+        _recompute_clusters()
+        _apply_cluster_threshold_rewards()
+        _regen_sprouts_for_turn()
+        if not _has_any_valid_tile_placements():
+                print("ShroudWorld: no valid tile placements remain – defeat")
+                _trigger_run_defeat("no_valid_placements")
+                return
+        _turn_number += 1
+        print("ShroudWorld: End turn -> Turn %d" % _turn_number)
+        _show_commune()
 
 func _place_tile_at_selector() -> void:
 	_clamp_selector()
@@ -904,19 +1036,28 @@ func _select_commune_choice(index: int) -> void:
 	print("ShroudWorld: selected tile %s" % _current_tile_id)
 
 func _get_neighbors(q: int, r: int) -> Array[Vector2i]:
-	var neighbors: Array[Vector2i] = []
-	var dirs := [
-		Vector2i(-1, 0),
-		Vector2i(1, 0),
-		Vector2i(0, -1),
-		Vector2i(0, 1)
-	]
-	for d in dirs:
-		var nq := q + d.x
-		var nr := r + d.y
-		if nq >= 0 and nq < GRID_WIDTH and nr >= 0 and nr < GRID_HEIGHT:
-			neighbors.append(Vector2i(nq, nr))
-	return neighbors
+        var neighbors: Array[Vector2i] = []
+        var dirs := [
+                Vector2i(-1, 0),
+                Vector2i(1, 0),
+                Vector2i(0, -1),
+                Vector2i(0, 1)
+        ]
+        for d in dirs:
+                var nq := q + d.x
+                var nr := r + d.y
+                if nq >= 0 and nq < GRID_WIDTH and nr >= 0 and nr < GRID_HEIGHT:
+                        neighbors.append(Vector2i(nq, nr))
+        return neighbors
+
+func _get_decay_totem_index_at(q: int, r: int) -> int:
+        for i in _decay_totems.size():
+                var data := _decay_totems[i]
+                if not bool(data.get("alive", true)):
+                        continue
+                if int(data.get("q", -1)) == q and int(data.get("r", -1)) == r:
+                        return i
+        return -1
 
 func _spread_decay_for_turn() -> void:
 	var new_decay_positions: Array[Vector2i] = []
@@ -955,13 +1096,15 @@ func _spread_decay_for_turn() -> void:
 				_tiles[r][q] = ""
 				_overgrowth_age[r][q] = 0
 
-	if not new_decay_positions.is_empty():
-		print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
-	else:
-		print("ShroudWorld: decay did not spread this turn")
+        if not new_decay_positions.is_empty():
+                print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
+        else:
+                print("ShroudWorld: decay did not spread this turn")
 
-	if is_instance_valid(_hex_grid):
-		_hex_grid.update()
+        _check_player_totem_for_decay()
+
+        if is_instance_valid(_hex_grid):
+                _hex_grid.update()
 
 func get_tile_id_at(q: int, r: int) -> String:
 	if r < 0 or r >= _tiles.size():
@@ -972,12 +1115,53 @@ func get_tile_id_at(q: int, r: int) -> String:
 	return str(row[q])
 
 func is_decay_at(q: int, r: int) -> bool:
-	if r < 0 or r >= _decay_grid.size():
-		return false
-	var row: Array = _decay_grid[r]
-	if q < 0 or q >= row.size():
-		return false
-	return bool(row[q])
+        if r < 0 or r >= _decay_grid.size():
+                return false
+        var row: Array = _decay_grid[r]
+        if q < 0 or q >= row.size():
+                return false
+        return bool(row[q])
+
+func _check_player_totem_for_decay() -> void:
+        if _player_totem_q < 0 or _player_totem_r < 0:
+                return
+        if _player_totem_r < 0 or _player_totem_r >= GRID_HEIGHT:
+                return
+        if _player_totem_q < 0 or _player_totem_q >= GRID_WIDTH:
+                return
+
+        if _decay_grid[_player_totem_r][_player_totem_q]:
+                print("ShroudWorld: player Totem consumed by Decay at (%d, %d)" % [
+                        _player_totem_q,
+                        _player_totem_r
+                ])
+                _trigger_run_defeat("totem_consumed")
+
+func _has_any_valid_tile_placements() -> bool:
+        for r in GRID_HEIGHT:
+                for q in GRID_WIDTH:
+                        if _tiles[r][q] != "":
+                                continue
+                        if _decay_grid[r][q]:
+                                continue
+
+                        var neighbors := [
+                                Vector2i(q - 1, r),
+                                Vector2i(q + 1, r),
+                                Vector2i(q, r - 1),
+                                Vector2i(q, r + 1)
+                        ]
+                        for v in neighbors:
+                                var nq := v.x
+                                var nr := v.y
+                                if nq < 0 or nq >= GRID_WIDTH or nr < 0 or nr >= GRID_HEIGHT:
+                                        continue
+                                if _decay_grid[nr][nq]:
+                                        continue
+                                if _tiles[nr][nq] != "":
+                                        return true
+
+        return false
 
 func _build_player_battle_team_from_sprouts() -> Array:
 	var team: Array = []
@@ -1059,13 +1243,19 @@ func _start_decay_attack_battle(q: int, r: int) -> void:
 		print("ShroudWorld: battle overlay layer is not set")
 		return
 
-	if not _can_attack_decay_at(q, r):
-		print("ShroudWorld: cannot attack decay at (%d, %d)" % [q, r])
-		return
+        if not _can_attack_decay_at(q, r):
+                print("ShroudWorld: cannot attack decay at (%d, %d)" % [q, r])
+                return
 
-	if not Engine.has_singleton("BattleContext"):
-		print("ShroudWorld: cannot start decay battle, BattleContext singleton not found")
-		return
+        var totem_index := _get_decay_totem_index_at(q, r)
+        if totem_index != -1:
+                print("ShroudWorld: starting decay attack battle vs Decay Totem at (%d, %d)" % [q, r])
+        else:
+                print("ShroudWorld: starting decay attack battle vs normal decay at (%d, %d)" % [q, r])
+
+        if not Engine.has_singleton("BattleContext"):
+                print("ShroudWorld: cannot start decay battle, BattleContext singleton not found")
+                return
 
 	var ctx := BattleContext
 	ctx.reset()
@@ -1219,16 +1409,31 @@ func _apply_decay_attack_result(result: String) -> void:
 		print("ShroudWorld: no valid decay target stored for battle result")
 		return
 
-	if result == "victory":
-		if _decay_grid[r][q]:
-			_decay_grid[r][q] = false
-			_decay_count = max(_decay_count - 1, 0)
-			print("ShroudWorld: cleansed decay at (%d, %d) after victory" % [q, r])
-	elif result == "defeat":
-		var neighbors := [
-			Vector2i(q - 1, r),
-			Vector2i(q + 1, r),
-			Vector2i(q, r - 1),
+        if result == "victory":
+                if _decay_grid[r][q]:
+                        _decay_grid[r][q] = false
+                        _decay_count = max(_decay_count - 1, 0)
+                        print("ShroudWorld: cleansed decay at (%d, %d) after victory" % [q, r])
+
+                var totem_index := _get_decay_totem_index_at(q, r)
+                if totem_index != -1:
+                        var totem := _decay_totems[totem_index]
+                        if bool(totem.get("alive", true)):
+                                totem["alive"] = false
+                                _decay_totems[totem_index] = totem
+                                _alive_decay_totem_count -= 1
+                                print("ShroudWorld: destroyed Decay Totem at (%d, %d). Remaining = %d" % [
+                                        q,
+                                        r,
+                                        _alive_decay_totem_count
+                                ])
+                                if _alive_decay_totem_count <= 0:
+                                        _trigger_run_victory()
+        elif result == "defeat":
+                var neighbors := [
+                        Vector2i(q - 1, r),
+                        Vector2i(q + 1, r),
+                        Vector2i(q, r - 1),
 			Vector2i(q, r + 1)
 		]
 		var candidates: Array = []
@@ -1249,9 +1454,11 @@ func _apply_decay_attack_result(result: String) -> void:
 			print("ShroudWorld: decay spreads to Life tile at (%d, %d) after defeat" % [cq, cr])
 			_tiles[cr][cq] = ""
 			_overgrowth_age[cr][cq] = 0
-			if not _decay_grid[cr][cq]:
-				_decay_grid[cr][cq] = true
-				_decay_count += 1
+                        if not _decay_grid[cr][cq]:
+                                _decay_grid[cr][cq] = true
+                                _decay_count += 1
 
-	if is_instance_valid(_hex_grid):
-		_hex_grid.update()
+        _check_player_totem_for_decay()
+
+        if is_instance_valid(_hex_grid):
+                _hex_grid.update()
