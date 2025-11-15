@@ -1385,6 +1385,15 @@ func _go_back_to_main_menu() -> void:
 func _start_new_turn() -> void:
     if _run_over:
         return
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        print(
+            "ShroudWorld: new turn %d (totem=%s, difficulty=%s)" % [
+                _turn_number,
+                str(ctx.selected_totem_id),
+                str(ctx.selected_difficulty)
+            ]
+        )
     _phase = PHASE_COMMUNE
     _current_tile_id = ""
     _current_tile_name = ""
@@ -1415,59 +1424,88 @@ func _show_commune() -> void:
     print("ShroudWorld: Commune open with offers: ", offers)
 
 func _generate_tile_offers() -> Array:
-    var unlocked_ids: Array[String] = []
+    var raw_entries: Array = []
     if Engine.has_singleton("MetaProgress"):
-        var entries := MetaProgress.get_all_tile_entries()
-        for entry in entries:
-            if not (entry is Dictionary):
-                continue
-            if not bool(entry.get("unlocked", false)):
-                continue
-            var tile_id := str(entry.get("id", ""))
-            if tile_id.is_empty():
-                continue
-            if not unlocked_ids.has(tile_id):
-                unlocked_ids.append(tile_id)
+        raw_entries = MetaProgress.get_all_tile_entries()
     else:
-        for def in _tile_defs:
-            if not (def is Dictionary):
-                continue
-            var tile_id := str(def.get("id", ""))
-            if tile_id.is_empty():
-                continue
-            if not unlocked_ids.has(tile_id):
-                unlocked_ids.append(tile_id)
-
-    if unlocked_ids.is_empty():
+        print("ShroudWorld: MetaProgress not available, cannot build commune offers")
         return []
 
-    var pool := unlocked_ids.duplicate()
-    var offers: Array[Dictionary] = []
-    var max_offers := min(3, pool.size())
-    for i in max_offers:
+    var unlocked_entries: Array = []
+    for entry in raw_entries:
+        if not (entry is Dictionary):
+            continue
+        if bool(entry.get("unlocked", false)):
+            unlocked_entries.append(entry)
+
+    if unlocked_entries.is_empty():
+        print("ShroudWorld: no unlocked tiles for commune offers")
+        return []
+
+    var totem_id := ""
+    var difficulty := "medium"
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        totem_id = str(ctx.selected_totem_id)
+        difficulty = str(ctx.selected_difficulty)
+        if difficulty.is_empty():
+            difficulty = "medium"
+    else:
+        print("ShroudWorld: RunContext not available when generating commune offers")
+
+    if Engine.has_singleton("CommuneManager"):
+        var offers := CommuneManager.generate_offers(
+            _tile_defs_by_id,
+            unlocked_entries,
+            totem_id,
+            difficulty,
+            3
+        )
+        if not offers.is_empty():
+            print(
+                "ShroudWorld: generated weighted commune offers (totem=%s, difficulty=%s)" % [
+                    totem_id,
+                    difficulty
+                ]
+            )
+            return offers
+        else:
+            print("ShroudWorld: CommuneManager returned no offers, falling back to random")
+    else:
+        print("ShroudWorld: CommuneManager singleton not available, using fallback commune offers")
+
+    var fallback_offers: Array = []
+    var pool := unlocked_entries.duplicate()
+    var max_offers := 3
+    for i in range(max_offers):
         if pool.is_empty():
             break
-        var idx := randi() % pool.size()
-        var tile_id := str(pool[idx])
+        var idx := randi_range(0, pool.size() - 1)
+        var entry := pool[idx]
         pool.remove_at(idx)
 
+        if not (entry is Dictionary):
+            continue
+        var tile_id := str(entry.get("id", ""))
+        if tile_id.is_empty():
+            continue
         var name := tile_id
         var category := ""
         var description := ""
         if _tile_defs_by_id.has(tile_id):
             var def := _tile_defs_by_id[tile_id]
-            name = str(def.get("name", tile_id))
+            name = str(def.get("name", name))
             category = str(def.get("category", ""))
             description = str(def.get("description", ""))
 
-        offers.append({
+        fallback_offers.append({
             "id": tile_id,
             "name": name,
             "category": category,
             "description": description
         })
 
-    return offers
+    return fallback_offers
 
 func _on_commune_offer_chosen(tile_id: String) -> void:
     var chosen_id := str(tile_id)
