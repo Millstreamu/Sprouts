@@ -688,6 +688,9 @@ func _trigger_run_victory() -> void:
                 _run_end_hint_label.text = "Press Space to return to Main Menu"
 
         _populate_run_end_stats()
+        if Engine.has_singleton("ChallengeContext"):
+                var stats := _build_run_stats_for_challenges()
+                ChallengeContext.update_after_run("victory", stats)
         print("ShroudWorld: run ended with VICTORY")
 
 func _trigger_run_defeat(reason: String) -> void:
@@ -710,6 +713,9 @@ func _trigger_run_defeat(reason: String) -> void:
                 _run_end_hint_label.text = "Press Space to return to Main Menu"
 
         _populate_run_end_stats()
+        if Engine.has_singleton("ChallengeContext"):
+                var stats := _build_run_stats_for_challenges()
+                ChallengeContext.update_after_run("defeat", stats)
         print("ShroudWorld: run ended with DEFEAT (%s)" % reason)
 
 func _populate_run_end_stats() -> void:
@@ -741,6 +747,17 @@ func _populate_run_end_stats() -> void:
         var fallen_label := Label.new()
         fallen_label.text = "Sprouts fallen: %d" % _run_sprouts_fallen
         _run_end_stats_list.add_child(fallen_label)
+
+func _build_run_stats_for_challenges() -> Dictionary:
+        var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
+        if destroyed < 0:
+                destroyed = 0
+        return {
+                "turns": _turn_number,
+                "sprouts_spawned": _run_sprouts_spawned,
+                "sprouts_fallen": _run_sprouts_fallen,
+                "decay_totems_destroyed": destroyed
+        }
 
 func _init_totems_for_run() -> void:
         _decay_totems.clear()

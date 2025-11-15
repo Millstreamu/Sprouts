@@ -1,15 +1,45 @@
-[gd_scene load_steps=2 format=3 uid="uid://dejt5fqs1ctcq"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://cl9p0orx2v6j6" path="res://scripts/ui/Challenges.gd" id="1_lc0vl"]
+[ext_resource type="Script" path="res://scripts/meta/ChallengesScreen.gd" id="1_bes3f"]
 
-[node name="Challenges" type="Control"]
-script = ExtResource("1_lc0vl")
-challenges_list_path = NodePath("ChallengesList")
-back_button_path = NodePath("BackButton")
+[node name="ChallengesScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_bes3f")
+title_label_path = NodePath("MarginContainer/MainVBox/TitleLabel")
+challenge_list_path = NodePath("MarginContainer/MainVBox/Scroll/ChallengeList")
+back_button_path = NodePath("MarginContainer/MainVBox/BottomBar/BackButton")
 
-[node name="ChallengesList" type="VBoxContainer" parent="."]
-layout_mode = 0
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 
-[node name="BackButton" type="Button" parent="."]
+[node name="MainVBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+text = "Challenges"
+
+[node name="Scroll" type="ScrollContainer" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ChallengeList" type="VBoxContainer" parent="MarginContainer/MainVBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="MarginContainer/MainVBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="MarginContainer/MainVBox/BottomBar"]
 layout_mode = 2
 text = "Back"
