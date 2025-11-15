@@ -107,8 +107,8 @@ func _on_collection() -> void:
 	get_tree().change_scene_to_file("res://scenes/meta/Collection.tscn")
 
 func _on_challenges() -> void:
-        print("MainMenu: Challenges selected")
-        get_tree().change_scene_to_file("res://scenes/meta/Challenges.tscn")
+		print("MainMenu: Challenges selected")
+		get_tree().change_scene_to_file("res://scenes/meta/Challenges.tscn")
 
 func _on_settings() -> void:
 	print("MainMenu: Settings selected")
