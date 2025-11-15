@@ -22,6 +22,7 @@ class_name ShroudWorldScreen
 @export var run_end_overlay_path: NodePath
 @export var run_end_result_label_path: NodePath
 @export var run_end_hint_label_path: NodePath
+@export var run_end_stats_list_path: NodePath
 
 @onready var _turn_label: Label = get_node(turn_label_path) as Label
 @onready var _phase_label: Label = get_node(phase_label_path) as Label
@@ -45,6 +46,7 @@ class_name ShroudWorldScreen
 @onready var _run_end_overlay: Control = get_node(run_end_overlay_path) as Control
 @onready var _run_end_result_label: Label = get_node(run_end_result_label_path) as Label
 @onready var _run_end_hint_label: Label = get_node(run_end_hint_label_path) as Label
+@onready var _run_end_stats_list: VBoxContainer = get_node(run_end_stats_list_path) as VBoxContainer
 
 const GRID_WIDTH: int = 7
 const GRID_HEIGHT: int = 5
@@ -92,6 +94,9 @@ var _alive_decay_totem_count: int = 0
 
 var _run_over: bool = false
 var _run_result: String = ""
+var _run_sprouts_spawned: int = 0
+var _run_sprouts_fallen: int = 0
+var _run_initial_decay_totems: int = 0
 
 # Cluster detection
 var _cluster_ids: Array = []
@@ -192,8 +197,6 @@ func _ready() -> void:
                 _tile_choice_button_1,
                 _tile_choice_button_2
         ]
-        _run_over = false
-        _run_result = ""
         _tile_choice_button_0.pressed.connect(func() -> void:
                 _select_commune_choice(0)
         )
@@ -207,12 +210,17 @@ func _ready() -> void:
 	_init_decay_grid()
 	_load_tile_defs()
 	_cluster_rewards.clear()
-	_turn_number = 1
-	_phase = PHASE_COMMUNE
-	_current_phase = "Commune"
-	_current_tile_id = ""
-	_current_tile_name = ""
-	_has_placed_this_turn = false
+        _turn_number = 1
+        _phase = PHASE_COMMUNE
+        _current_phase = "Commune"
+        _run_over = false
+        _run_result = ""
+        _run_sprouts_spawned = 0
+        _run_sprouts_fallen = 0
+        _run_initial_decay_totems = 0
+        _current_tile_id = ""
+        _current_tile_name = ""
+        _has_placed_this_turn = false
 	_res_nature = 0
 	_res_water = 0
 	_res_earth = 0
@@ -233,7 +241,7 @@ func _ready() -> void:
 	_selector.update()
 	if is_instance_valid(_sprout_registry_overlay):
 		_sprout_registry_overlay.visible = false
-	_update_sprout_registry_view()
+        _update_sprout_registry_view()
         if is_instance_valid(_battle_overlay_layer):
                 _battle_overlay_layer.visible = false
         if is_instance_valid(_run_end_overlay):
@@ -502,15 +510,16 @@ func _try_spawn_sprout_from_cluster(q: int, r: int, category: String, threshold:
 	}
 	_next_sprout_instance_id += 1
 
-	_sprouts.append(sprout)
-	print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d) from cluster reward (threshold %d, category %s)" % [
-		sprout_id,
-		sprout.get("instance_id"),
-		q,
-		r,
-		threshold,
-		category
-	])
+        _sprouts.append(sprout)
+        _run_sprouts_spawned += 1
+        print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d) from cluster reward (threshold %d, category %s)" % [
+                sprout_id,
+                sprout.get("instance_id"),
+                q,
+                r,
+                threshold,
+                category
+        ])
 
 	_update_sprout_registry_view()
 	return true
@@ -678,6 +687,7 @@ func _trigger_run_victory() -> void:
         if is_instance_valid(_run_end_hint_label):
                 _run_end_hint_label.text = "Press Space to return to Main Menu"
 
+        _populate_run_end_stats()
         print("ShroudWorld: run ended with VICTORY")
 
 func _trigger_run_defeat(reason: String) -> void:
@@ -699,7 +709,38 @@ func _trigger_run_defeat(reason: String) -> void:
         if is_instance_valid(_run_end_hint_label):
                 _run_end_hint_label.text = "Press Space to return to Main Menu"
 
+        _populate_run_end_stats()
         print("ShroudWorld: run ended with DEFEAT (%s)" % reason)
+
+func _populate_run_end_stats() -> void:
+        if not is_instance_valid(_run_end_stats_list):
+                return
+
+        for child in _run_end_stats_list.get_children():
+                child.queue_free()
+
+        var turns_label := Label.new()
+        turns_label.text = "Turns survived: %d" % _turn_number
+        _run_end_stats_list.add_child(turns_label)
+
+        var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
+        if destroyed < 0:
+                destroyed = 0
+
+        var totem_label := Label.new()
+        totem_label.text = "Decay Totems destroyed: %d / %d" % [
+                destroyed,
+                _run_initial_decay_totems
+        ]
+        _run_end_stats_list.add_child(totem_label)
+
+        var spawned_label := Label.new()
+        spawned_label.text = "Sprouts spawned: %d" % _run_sprouts_spawned
+        _run_end_stats_list.add_child(spawned_label)
+
+        var fallen_label := Label.new()
+        fallen_label.text = "Sprouts fallen: %d" % _run_sprouts_fallen
+        _run_end_stats_list.add_child(fallen_label)
 
 func _init_totems_for_run() -> void:
         _decay_totems.clear()
@@ -760,6 +801,7 @@ func _init_totems_for_run() -> void:
                 _decay_totems.append(data)
 
         _alive_decay_totem_count = _decay_totems.size()
+        _run_initial_decay_totems = _alive_decay_totem_count
         print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
 
 func _load_tile_defs() -> void:
@@ -911,13 +953,14 @@ func _spawn_sprout_from_grove(q: int, r: int) -> void:
 	}
 	_next_sprout_instance_id += 1
 
-	_sprouts.append(sprout)
-	print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d)" % [
-		sprout_id,
-		sprout.get("instance_id"),
-		q,
-		r
-	])
+        _sprouts.append(sprout)
+        _run_sprouts_spawned += 1
+        print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d)" % [
+                sprout_id,
+                sprout.get("instance_id"),
+                q,
+                r
+        ])
 	_update_sprout_registry_view()
 
 func _update_sprout_registry_view() -> void:
@@ -1597,15 +1640,18 @@ func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) 
 		if instance_id < 0:
 			continue
 
-		for sprout in _sprouts:
-			if int(sprout.get("instance_id", -1)) == instance_id:
-				var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
-				sprout["current_hp"] = new_hp
-				if new_hp <= 0:
-					sprout["dead"] = true
-				else:
-					sprout["dead"] = false
-				break
+                for sprout in _sprouts:
+                        if int(sprout.get("instance_id", -1)) == instance_id:
+                                var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
+                                var was_dead_before := bool(sprout.get("dead", false))
+                                sprout["current_hp"] = new_hp
+                                if new_hp <= 0:
+                                        sprout["dead"] = true
+                                        if not was_dead_before:
+                                                _run_sprouts_fallen += 1
+                                else:
+                                        sprout["dead"] = false
+                                break
 
 	_update_sprout_registry_view()
 
