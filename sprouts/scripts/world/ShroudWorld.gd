@@ -7,8 +7,7 @@ class_name ShroudWorldScreen
 @export var hex_grid_path: NodePath
 @export var selector_path: NodePath
 @export var tile_info_label_path: NodePath
-@export var resource_label_path: NodePath
-@export var end_turn_hint_label_path: NodePath
+@export var world_hud_path: NodePath
 @export var back_button_path: NodePath
 @export var commune_overlay_path: NodePath
 @export var commune_title_label_path: NodePath
@@ -30,8 +29,7 @@ class_name ShroudWorldScreen
 @onready var _hex_grid: Node2D = get_node(hex_grid_path) as Node2D
 @onready var _selector: Node2D = get_node(selector_path) as Node2D
 @onready var _tile_info_label: Label = get_node(tile_info_label_path) as Label
-@onready var _resource_label: Label = get_node(resource_label_path) as Label
-@onready var _end_turn_hint_label: Label = get_node(end_turn_hint_label_path) as Label
+@onready var _world_hud: WorldHUD = get_node(world_hud_path) as WorldHUD
 @onready var _back_button: Button = get_node(back_button_path) as Button
 @onready var _commune_overlay: Control = get_node(commune_overlay_path) as Control
 @onready var _commune_title_label: Label = get_node(commune_title_label_path) as Label
@@ -191,74 +189,76 @@ var _res_earth: int = 0
 var _res_souls: int = 0
 
 func _ready() -> void:
-        _back_button.pressed.connect(_on_back_pressed)
-        _tile_choice_buttons = [
-                _tile_choice_button_0,
-                _tile_choice_button_1,
-                _tile_choice_button_2
-        ]
-        _tile_choice_button_0.pressed.connect(func() -> void:
-                _select_commune_choice(0)
+    _back_button.pressed.connect(_on_back_pressed)
+    _tile_choice_buttons = [
+        _tile_choice_button_0,
+        _tile_choice_button_1,
+        _tile_choice_button_2
+    ]
+    _tile_choice_button_0.pressed.connect(func() -> void:
+        _select_commune_choice(0)
+    )
+    _tile_choice_button_1.pressed.connect(func() -> void:
+        _select_commune_choice(1)
+    )
+    _tile_choice_button_2.pressed.connect(func() -> void:
+        _select_commune_choice(2)
+    )
+    _init_tiles()
+    _init_decay_grid()
+    _load_tile_defs()
+    _cluster_rewards.clear()
+    _turn_number = 1
+    _phase = PHASE_COMMUNE
+    _current_phase = "Commune"
+    _run_over = false
+    _run_result = ""
+    _run_sprouts_spawned = 0
+    _run_sprouts_fallen = 0
+    _run_initial_decay_totems = 0
+    _current_tile_id = ""
+    _current_tile_name = ""
+    _has_placed_this_turn = false
+    _res_nature = 0
+    _res_water = 0
+    _res_earth = 0
+    _res_souls = 0
+    if is_instance_valid(_world_hud):
+        _world_hud.next_turn_requested.connect(_on_hud_next_turn_requested)
+        _refresh_hud_resources()
+    _spawn_initial_decay_sources()
+    _init_totems_for_run()
+    _recompute_clusters()
+    _apply_cluster_threshold_rewards()
+    _update_turn_and_phase_labels()
+    _update_tile_panel()
+    _update_resource_label()
+    _show_commune()
+    _update_selector_position()
+    _update_tile_info_for_selector()
+    if is_instance_valid(_hex_grid):
+        _hex_grid.update()
+    _selector.update()
+    if is_instance_valid(_sprout_registry_overlay):
+        _sprout_registry_overlay.visible = false
+    _update_sprout_registry_view()
+    if is_instance_valid(_battle_overlay_layer):
+        _battle_overlay_layer.visible = false
+    if is_instance_valid(_run_end_overlay):
+        _run_end_overlay.visible = false
+    if get_tree().has_node(RUN_CONTEXT_PATH):
+        var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
+        ctx.debug_print()
+        print(
+            "ShroudWorld: starting run with totem=%s difficulty=%s sprouts=%s" % [
+                ctx.selected_totem_id,
+                str(ctx.selected_difficulty),
+                ctx.selected_sprout_ids
+            ]
         )
-	_tile_choice_button_1.pressed.connect(func() -> void:
-		_select_commune_choice(1)
-	)
-	_tile_choice_button_2.pressed.connect(func() -> void:
-		_select_commune_choice(2)
-	)
-	_init_tiles()
-	_init_decay_grid()
-	_load_tile_defs()
-	_cluster_rewards.clear()
-        _turn_number = 1
-        _phase = PHASE_COMMUNE
-        _current_phase = "Commune"
-        _run_over = false
-        _run_result = ""
-        _run_sprouts_spawned = 0
-        _run_sprouts_fallen = 0
-        _run_initial_decay_totems = 0
-        _current_tile_id = ""
-        _current_tile_name = ""
-        _has_placed_this_turn = false
-	_res_nature = 0
-	_res_water = 0
-	_res_earth = 0
-	_res_souls = 0
-        _spawn_initial_decay_sources()
-        _init_totems_for_run()
-        _recompute_clusters()
-	_apply_cluster_threshold_rewards()
-	_update_turn_and_phase_labels()
-	_update_tile_panel()
-	_update_resource_label()
-	_end_turn_hint_label.text = "RL - Next Turn (Press V)"
-	_show_commune()
-	_update_selector_position()
-	_update_tile_info_for_selector()
-	if is_instance_valid(_hex_grid):
-		_hex_grid.update()
-	_selector.update()
-	if is_instance_valid(_sprout_registry_overlay):
-		_sprout_registry_overlay.visible = false
-        _update_sprout_registry_view()
-        if is_instance_valid(_battle_overlay_layer):
-                _battle_overlay_layer.visible = false
-        if is_instance_valid(_run_end_overlay):
-                _run_end_overlay.visible = false
-        if get_tree().has_node(RUN_CONTEXT_PATH):
-		var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
-		ctx.debug_print()
-                print(
-                        "ShroudWorld: starting run with totem=%s difficulty=%s sprouts=%s" % [
-                                ctx.selected_totem_id,
-                                str(ctx.selected_difficulty),
-                                ctx.selected_sprout_ids
-                        ]
-                )
-        else:
-                print("ShroudWorld: WARNING - RunContext singleton not found")
-        print("ShroudWorld: ready")
+    else:
+        print("ShroudWorld: WARNING - RunContext singleton not found")
+    print("ShroudWorld: ready")
 
 func _get_current_difficulty_key() -> String:
     if Engine.has_singleton("RunContext"):
@@ -269,6 +269,13 @@ func _get_current_difficulty_key() -> String:
     return "easy"
 
 func _input(event: InputEvent) -> void:
+    if _run_over:
+        if Input.is_action_just_pressed("ui_accept"):
+            print("ShroudWorld: returning to Main Menu after run end")
+            get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+            accept_event()
+        return
+
     if _battle_overlay_active:
         return
 
@@ -301,14 +308,16 @@ func _input(event: InputEvent) -> void:
             _toggle_sprout_registry()
             accept_event()
             return
-
         if event.keycode == Key.KEY_C:
             _debug_print_clusters()
             accept_event()
             return
-
         if event.keycode == Key.KEY_B:
             _start_debug_battle()
+            accept_event()
+            return
+        if event.keycode == Key.KEY_V:
+            _try_end_turn_from_input()
             accept_event()
             return
 
@@ -352,12 +361,6 @@ func _input(event: InputEvent) -> void:
         accept_event()
         return
 
-    if event is InputEventKey and event.pressed and not event.echo:
-        if event.keycode == Key.KEY_V:
-            _end_turn()
-            accept_event()
-            return
-
     if Input.is_action_just_pressed("ui_left"):
         _move_selector(-1, 0)
         accept_event()
@@ -370,6 +373,16 @@ func _input(event: InputEvent) -> void:
     elif Input.is_action_just_pressed("ui_down"):
         _move_selector(0, 1)
         accept_event()
+
+func _try_end_turn_from_input() -> void:
+    if _run_over:
+        return
+    if _battle_overlay_active:
+        return
+    _end_turn()
+
+func _on_hud_next_turn_requested() -> void:
+    _try_end_turn_from_input()
 
 func _init_tiles() -> void:
 	_tiles.clear()
@@ -881,13 +894,13 @@ func _update_turn_and_phase_labels() -> void:
 func _update_tile_panel() -> void:
 	_update_tile_info_for_selector()
 
+func _refresh_hud_resources() -> void:
+    if not is_instance_valid(_world_hud):
+        return
+    _world_hud.set_resources(_res_nature, _res_earth, _res_water, _res_souls)
+
 func _update_resource_label() -> void:
-	_resource_label.text = "Nature: %d | Water: %d | Earth: %d | Souls: %d" % [
-		_res_nature,
-		_res_water,
-		_res_earth,
-		_res_souls
-	]
+    _refresh_hud_resources()
 
 func _generate_resources_for_turn() -> void:
 	var add_nature: int = 0
