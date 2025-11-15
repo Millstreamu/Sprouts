@@ -1,0 +1,145 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/CommuneWindow.gd" id="1_2g1pn"]
+
+[node name="CommuneWindow" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_2g1pn")
+title_label_path = NodePath("Panel/MainVBox/TitleLabel")
+hint_label_path = NodePath("Panel/MainVBox/HintLabel")
+offer0_path = NodePath("Panel/MainVBox/OfferRow/Offer0")
+offer1_path = NodePath("Panel/MainVBox/OfferRow/Offer1")
+offer2_path = NodePath("Panel/MainVBox/OfferRow/Offer2")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
+
+[node name="MainVBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="Panel/MainVBox"]
+text = "Commune"
+horizontal_alignment = 1
+
+[node name="OfferRow" type="HBoxContainer" parent="Panel/MainVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="Offer0" type="Panel" parent="Panel/MainVBox/OfferRow"]
+custom_minimum_size = Vector2(200, 160)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="OfferVBox" type="VBoxContainer" parent="Panel/MainVBox/OfferRow/Offer0"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer0/OfferVBox"]
+text = "Name"
+horizontal_alignment = 1
+
+[node name="CategoryLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer0/OfferVBox"]
+text = "Category"
+horizontal_alignment = 1
+
+[node name="DescriptionLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer0/OfferVBox"]
+autowrap_mode = 2
+text = "Description goes here"
+vertical_alignment = 1
+
+[node name="Offer1" type="Panel" parent="Panel/MainVBox/OfferRow"]
+custom_minimum_size = Vector2(200, 160)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="OfferVBox" type="VBoxContainer" parent="Panel/MainVBox/OfferRow/Offer1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer1/OfferVBox"]
+text = "Name"
+horizontal_alignment = 1
+
+[node name="CategoryLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer1/OfferVBox"]
+text = "Category"
+horizontal_alignment = 1
+
+[node name="DescriptionLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer1/OfferVBox"]
+autowrap_mode = 2
+text = "Description goes here"
+vertical_alignment = 1
+
+[node name="Offer2" type="Panel" parent="Panel/MainVBox/OfferRow"]
+custom_minimum_size = Vector2(200, 160)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="OfferVBox" type="VBoxContainer" parent="Panel/MainVBox/OfferRow/Offer2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer2/OfferVBox"]
+text = "Name"
+horizontal_alignment = 1
+
+[node name="CategoryLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer2/OfferVBox"]
+text = "Category"
+horizontal_alignment = 1
+
+[node name="DescriptionLabel" type="Label" parent="Panel/MainVBox/OfferRow/Offer2/OfferVBox"]
+autowrap_mode = 2
+text = "Description goes here"
+vertical_alignment = 1
+
+[node name="HintLabel" type="Label" parent="Panel/MainVBox"]
+text = "[←/→] Choose  •  [Space] Confirm"
+horizontal_alignment = 1

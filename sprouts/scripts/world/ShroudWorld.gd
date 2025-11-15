@@ -10,12 +10,7 @@ class_name ShroudWorldScreen
 @export var tile_info_panel_path: NodePath
 @export var world_hud_path: NodePath
 @export var back_button_path: NodePath
-@export var commune_overlay_path: NodePath
-@export var commune_title_label_path: NodePath
-@export var commune_hint_label_path: NodePath
-@export var tile_choice_button_0_path: NodePath
-@export var tile_choice_button_1_path: NodePath
-@export var tile_choice_button_2_path: NodePath
+@export var commune_window_path: NodePath
 @export var sprout_registry_overlay_path: NodePath
 @export var sprout_registry_list_path: NodePath
 @export var battle_overlay_layer_path: NodePath
@@ -33,13 +28,7 @@ class_name ShroudWorldScreen
 @onready var _tile_info_panel: WorldTileInfoPanel = get_node(tile_info_panel_path) as WorldTileInfoPanel
 @onready var _world_hud: WorldHUD = get_node(world_hud_path) as WorldHUD
 @onready var _back_button: Button = get_node(back_button_path) as Button
-@onready var _commune_overlay: Control = get_node(commune_overlay_path) as Control
-@onready var _commune_title_label: Label = get_node(commune_title_label_path) as Label
-@onready var _commune_hint_label: Label = get_node(commune_hint_label_path) as Label
-@onready var _tile_choice_button_0: Button = get_node(tile_choice_button_0_path) as Button
-@onready var _tile_choice_button_1: Button = get_node(tile_choice_button_1_path) as Button
-@onready var _tile_choice_button_2: Button = get_node(tile_choice_button_2_path) as Button
-@onready var _tile_choice_buttons: Array[Button] = []
+@onready var _commune_window: CommuneWindow = get_node(commune_window_path) as CommuneWindow
 @onready var _sprout_registry_overlay: Control = get_node(sprout_registry_overlay_path) as Control
 @onready var _sprout_registry_list: VBoxContainer = get_node(sprout_registry_list_path) as VBoxContainer
 @onready var _battle_overlay_layer: Control = get_node(battle_overlay_layer_path) as Control
@@ -60,7 +49,6 @@ const PHASE_COMMUNE: int = 0
 const PHASE_PLAYER: int = 1
 
 var _turn_number: int = 1
-var _current_phase: String = "Player"
 var _phase: int = PHASE_COMMUNE
 
 var _selector_q: int = 0
@@ -182,9 +170,8 @@ const ENEMY_CONFIG := {
 
 var _tile_defs: Array = []
 var _tile_defs_by_id: Dictionary = {}
-var _dummy_tiles: Array = []
 
-var _current_commune_choices: Array = []
+var _commune_active: bool = false
 
 var _res_nature: int = 0
 var _res_water: int = 0
@@ -193,27 +180,15 @@ var _res_souls: int = 0
 
 func _ready() -> void:
     _back_button.pressed.connect(_on_back_pressed)
-    _tile_choice_buttons = [
-        _tile_choice_button_0,
-        _tile_choice_button_1,
-        _tile_choice_button_2
-    ]
-    _tile_choice_button_0.pressed.connect(func() -> void:
-        _select_commune_choice(0)
-    )
-    _tile_choice_button_1.pressed.connect(func() -> void:
-        _select_commune_choice(1)
-    )
-    _tile_choice_button_2.pressed.connect(func() -> void:
-        _select_commune_choice(2)
-    )
+    if is_instance_valid(_commune_window):
+        _commune_window.offer_chosen.connect(_on_commune_offer_chosen)
+        _commune_window.visible = false
     _init_tiles()
     _init_decay_grid()
     _load_tile_defs()
     _cluster_rewards.clear()
     _turn_number = 1
     _phase = PHASE_COMMUNE
-    _current_phase = "Commune"
     _run_over = false
     _run_result = ""
     _run_sprouts_spawned = 0
@@ -239,7 +214,7 @@ func _ready() -> void:
     _update_turn_and_phase_labels()
     _update_tile_panel()
     _update_resource_label()
-    _show_commune()
+    _start_new_turn()
     _update_selector_position()
     _update_tile_info_for_selector()
     if is_instance_valid(_hex_grid):
@@ -283,6 +258,9 @@ func _input(event: InputEvent) -> void:
         return
 
     if _battle_overlay_active:
+        return
+
+    if _commune_active:
         return
 
     if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
@@ -343,23 +321,6 @@ func _input(event: InputEvent) -> void:
         _go_back_to_main_menu()
         accept_event()
         return
-
-    if _phase == PHASE_COMMUNE and _commune_overlay.visible:
-        if event is InputEventKey and event.pressed and not event.echo:
-            match event.keycode:
-                Key.KEY_1:
-                    _select_commune_choice(0)
-                    accept_event()
-                    return
-                Key.KEY_2:
-                    _select_commune_choice(1)
-                    accept_event()
-                    return
-                Key.KEY_3:
-                    _select_commune_choice(2)
-                    accept_event()
-                    return
-            return
 
     if _phase != PHASE_PLAYER:
         return
@@ -1022,9 +983,8 @@ func _init_totems_for_run() -> void:
         print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
 
 func _load_tile_defs() -> void:
-	_tile_defs.clear()
-	_tile_defs_by_id.clear()
-	_dummy_tiles.clear()
+        _tile_defs.clear()
+        _tile_defs_by_id.clear()
 
 	var path := "res://data/tiles.json"
 	if not FileAccess.file_exists(path):
@@ -1050,10 +1010,9 @@ func _load_tile_defs() -> void:
 					continue
 				_tile_defs.append(entry)
 				_tile_defs_by_id[id] = entry
-		_dummy_tiles = _tile_defs.duplicate()
-		print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
-	else:
-		print("ShroudWorld: tiles.json root is not an Array")
+                print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
+        else:
+                print("ShroudWorld: tiles.json root is not an Array")
 
 func _clamp_selector() -> void:
 	_selector_q = clampi(_selector_q, 0, GRID_WIDTH - 1)
@@ -1376,7 +1335,7 @@ func _end_turn() -> void:
                 return
         _turn_number += 1
         print("ShroudWorld: End turn -> Turn %d" % _turn_number)
-        _show_commune()
+        _start_new_turn()
 
 func _place_tile_at_selector() -> void:
 	_clamp_selector()
@@ -1420,53 +1379,114 @@ func _on_back_pressed() -> void:
 	_go_back_to_main_menu()
 
 func _go_back_to_main_menu() -> void:
-	print("ShroudWorld: back to Main Menu")
-	get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+    print("ShroudWorld: back to Main Menu")
+    get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+
+func _start_new_turn() -> void:
+    if _run_over:
+        return
+    _phase = PHASE_COMMUNE
+    _current_tile_id = ""
+    _current_tile_name = ""
+    _has_placed_this_turn = false
+    _commune_active = false
+    _update_tile_panel()
+    _update_turn_and_phase_labels()
+    _show_commune()
 
 func _show_commune() -> void:
-	_phase = PHASE_COMMUNE
-	_current_phase = "Commune"
-	_has_placed_this_turn = false
-	_current_tile_id = ""
-	_current_tile_name = ""
-	_update_tile_panel()
-	_update_turn_and_phase_labels()
-	_current_commune_choices.clear()
-	var count := 3
-	if _dummy_tiles.is_empty():
-		print("ShroudWorld: no tiles loaded for Commune")
-	else:
-		for i in count:
-			var idx := randi() % _dummy_tiles.size()
-			_current_commune_choices.append(_dummy_tiles[idx])
-	for i in _tile_choice_buttons.size():
-		var button := _tile_choice_buttons[i]
-		if i < _current_commune_choices.size():
-			var data := _current_commune_choices[i]
-			var tile_name := str(data.get("name", "Tile"))
-			button.text = tile_name
-			button.disabled = false
-		else:
-			button.text = "-"
-			button.disabled = true
-	_commune_title_label.text = "Commune – Choose a Tile"
-	_commune_hint_label.text = "Use 1/2/3 or Space/Enter while focused, arrows move selector"
-	_commune_overlay.visible = true
-	print("ShroudWorld: Commune open with choices: ", _current_commune_choices)
+    if not is_instance_valid(_commune_window):
+        print("ShroudWorld: CommuneWindow not available")
+        _phase = PHASE_PLAYER
+        _commune_active = false
+        _update_turn_and_phase_labels()
+        return
 
-func _select_commune_choice(index: int) -> void:
-	if index < 0 or index >= _current_commune_choices.size():
-		return
-	var choice := _current_commune_choices[index]
-	_current_tile_id = str(choice.get("id", ""))
-	_current_tile_name = str(choice.get("name", ""))
-	_phase = PHASE_PLAYER
-	_current_phase = "Player"
-	_has_placed_this_turn = false
-	_update_tile_panel()
-	_update_turn_and_phase_labels()
-	_commune_overlay.visible = false
-	print("ShroudWorld: selected tile %s" % _current_tile_id)
+    var offers := _generate_tile_offers()
+    if offers.is_empty():
+        print("ShroudWorld: no unlocked tiles available for Commune offers")
+        _phase = PHASE_PLAYER
+        _commune_active = false
+        _update_turn_and_phase_labels()
+        return
+
+    _commune_active = true
+    _commune_window.open_with_offers(offers)
+    print("ShroudWorld: Commune open with offers: ", offers)
+
+func _generate_tile_offers() -> Array:
+    var unlocked_ids: Array[String] = []
+    if Engine.has_singleton("MetaProgress"):
+        var entries := MetaProgress.get_all_tile_entries()
+        for entry in entries:
+            if not (entry is Dictionary):
+                continue
+            if not bool(entry.get("unlocked", false)):
+                continue
+            var tile_id := str(entry.get("id", ""))
+            if tile_id.is_empty():
+                continue
+            if not unlocked_ids.has(tile_id):
+                unlocked_ids.append(tile_id)
+    else:
+        for def in _tile_defs:
+            if not (def is Dictionary):
+                continue
+            var tile_id := str(def.get("id", ""))
+            if tile_id.is_empty():
+                continue
+            if not unlocked_ids.has(tile_id):
+                unlocked_ids.append(tile_id)
+
+    if unlocked_ids.is_empty():
+        return []
+
+    var pool := unlocked_ids.duplicate()
+    var offers: Array[Dictionary] = []
+    var max_offers := min(3, pool.size())
+    for i in max_offers:
+        if pool.is_empty():
+            break
+        var idx := randi() % pool.size()
+        var tile_id := str(pool[idx])
+        pool.remove_at(idx)
+
+        var name := tile_id
+        var category := ""
+        var description := ""
+        if _tile_defs_by_id.has(tile_id):
+            var def := _tile_defs_by_id[tile_id]
+            name = str(def.get("name", tile_id))
+            category = str(def.get("category", ""))
+            description = str(def.get("description", ""))
+
+        offers.append({
+            "id": tile_id,
+            "name": name,
+            "category": category,
+            "description": description
+        })
+
+    return offers
+
+func _on_commune_offer_chosen(tile_id: String) -> void:
+    var chosen_id := str(tile_id)
+    if chosen_id.is_empty():
+        return
+
+    _current_tile_id = chosen_id
+    _current_tile_name = chosen_id
+    if _tile_defs_by_id.has(chosen_id):
+        var def := _tile_defs_by_id[chosen_id]
+        _current_tile_name = str(def.get("name", chosen_id))
+
+    _phase = PHASE_PLAYER
+    _commune_active = false
+    if is_instance_valid(_commune_window):
+        _commune_window.close_commune()
+    _update_tile_panel()
+    _update_turn_and_phase_labels()
+    print("ShroudWorld: selected tile %s" % _current_tile_id)
 
 func _get_neighbors(q: int, r: int) -> Array[Vector2i]:
         var neighbors: Array[Vector2i] = []
