@@ -87,7 +87,7 @@ func _compute_tile_weight(tile_def: Dictionary, totem_id: String, difficulty: St
     var weight: float = _get_category_weight_for(totem_id, difficulty, category)
     if weight <= 0.0:
         return 0.0
-    var tags_data := tile_def.get("tags", [])
+    var tags_data: Variant = tile_def.get("tags", [])
     if tags_data is Array:
         var tags: Array = tags_data
         if "unique" in tags:
@@ -159,17 +159,17 @@ func generate_offers(
         var tile_id: String = str(entry.get("id", ""))
         if tile_id.is_empty():
             continue
-        var name: String = str(entry.get("name", tile_id))
+        var entry_name: String = str(entry.get("name", tile_id))
         var category: String = ""
         var description: String = ""
         if tile_defs.has(tile_id):
             var def: Dictionary = tile_defs[tile_id]
-            name = str(def.get("name", name))
+            entry_name = str(def.get("name", entry_name))
             category = str(def.get("category", ""))
             description = str(def.get("description", ""))
         offers.append({
             "id": tile_id,
-            "name": name,
+            "name": entry_name,
             "category": category,
             "description": description
         })
