@@ -249,13 +249,13 @@ func _ready() -> void:
         if get_tree().has_node(RUN_CONTEXT_PATH):
 		var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
 		ctx.debug_print()
-		print(
-			"ShroudWorld: starting run with totem=%s difficulty=%d sprouts=%s" % [
-				ctx.selected_totem_id,
-				ctx.selected_difficulty,
-				ctx.selected_sprout_ids
-			]
-		)
+                print(
+                        "ShroudWorld: starting run with totem=%s difficulty=%s sprouts=%s" % [
+                                ctx.selected_totem_id,
+                                str(ctx.selected_difficulty),
+                                ctx.selected_sprout_ids
+                        ]
+                )
         else:
                 print("ShroudWorld: WARNING - RunContext singleton not found")
         print("ShroudWorld: ready")
