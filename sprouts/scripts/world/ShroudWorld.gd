@@ -44,6 +44,8 @@ const GRID_WIDTH: int = 7
 const GRID_HEIGHT: int = 5
 const HEX_SIZE: float = 40.0
 
+const SPROUT_REGEN_PCT_PER_TURN: float = 0.05
+
 const PHASE_COMMUNE: int = 0
 const PHASE_PLAYER: int = 1
 
@@ -709,23 +711,66 @@ func _update_sprout_registry_view() -> void:
 
     for sprout in _sprouts:
         var label := Label.new()
-        var sprout_id := str(sprout.get("id", ""))
+        var sprout_id := str(sprout.get("id", "sprout"))
         var level := int(sprout.get("level", 1))
-        var q := int(sprout.get("q", -1))
-        var r := int(sprout.get("r", -1))
         var max_hp := int(sprout.get("max_hp", 0))
         var current_hp := int(sprout.get("current_hp", 0))
+        var q := int(sprout.get("q", -1))
+        var r := int(sprout.get("r", -1))
         var is_dead := bool(sprout.get("dead", false))
-        label.text = "%s (Lv %d) HP %d/%d at (%d, %d)%s" % [
+
+        var text := "%s (Lv %d) HP %d/%d at (%d, %d)" % [
             sprout_id,
             level,
             current_hp,
             max_hp,
             q,
-            r,
-            is_dead ? " [DEAD]" : ""
+            r
         ]
+        if is_dead:
+            text += " [DEAD]"
+
+        label.text = text
         _sprout_registry_list.add_child(label)
+
+func _regen_sprouts_for_turn() -> void:
+    if _sprouts.is_empty():
+        return
+
+    for sprout in _sprouts:
+        if bool(sprout.get("dead", false)):
+            continue
+
+        var max_hp := int(sprout.get("max_hp", 0))
+        if max_hp <= 0:
+            continue
+
+        var current_hp := int(sprout.get("current_hp", 0))
+        if current_hp >= max_hp:
+            continue
+
+        var regen_amount := int(round(float(max_hp) * SPROUT_REGEN_PCT_PER_TURN))
+        if regen_amount < 1:
+            regen_amount = 1
+
+        current_hp += regen_amount
+        if current_hp > max_hp:
+            current_hp = max_hp
+
+        sprout["current_hp"] = current_hp
+
+    _update_sprout_registry_view()
+    print("ShroudWorld: applied regen to sprouts for this turn")
+
+func _get_living_sprout_count() -> int:
+    var count := 0
+    for sprout in _sprouts:
+        if bool(sprout.get("dead", false)):
+            continue
+        var current_hp := int(sprout.get("current_hp", 0))
+        if current_hp > 0:
+            count += 1
+    return count
 
 func _show_sprout_registry() -> void:
     if not is_instance_valid(_sprout_registry_overlay):
@@ -762,6 +807,7 @@ func _end_turn() -> void:
     _advance_overgrowth_and_groves()
     _recompute_clusters()
     _apply_cluster_threshold_rewards()
+    _regen_sprouts_for_turn()
     _turn_number += 1
     print("ShroudWorld: End turn -> Turn %d" % _turn_number)
     _show_commune()
@@ -938,10 +984,14 @@ func _build_player_battle_team_from_sprouts() -> Array:
         if bool(sprout.get("dead", false)):
             continue
 
+        var current_hp := int(sprout.get("current_hp", sprout.get("max_hp", 0)))
+        if current_hp <= 0:
+            continue
+
         var name := str(sprout.get("id", "Sprout"))
         var level := int(sprout.get("level", 1))
         var max_hp := int(sprout.get("max_hp", 60 + level * 10))
-        var current_hp := int(sprout.get("current_hp", max_hp))
+        current_hp = clamp(current_hp, 0, max_hp)
         var attack := 10 + level * 2
         var cooldown := 3.0
         var unit := {
@@ -1018,6 +1068,11 @@ func _start_decay_attack_battle(q: int, r: int) -> void:
 
     var ctx := BattleContext
     ctx.reset()
+
+    var living_count := _get_living_sprout_count()
+    if living_count <= 0:
+        print("ShroudWorld: no living sprouts available to fight decay")
+        return
 
     var player_team := _build_player_battle_team_from_sprouts()
     if player_team.is_empty():
@@ -1132,7 +1187,10 @@ func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) 
             if int(sprout.get("instance_id", -1)) == instance_id:
                 var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
                 sprout["current_hp"] = new_hp
-                sprout["dead"] = new_hp <= 0
+                if new_hp <= 0:
+                    sprout["dead"] = true
+                else:
+                    sprout["dead"] = false
                 break
 
     _update_sprout_registry_view()
