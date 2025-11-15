@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://bn88hhvl45tt5"]
 
-[ext_resource type="Script" path="res://scripts/ui/SproutSelect.gd" id="1_6v1su"]
-[ext_resource type="PackedScene" path="res://scenes/ui/CardBase.tscn" id="2_i8eym"]
+[ext_resource type="Script" uid="uid://b2knmw4q56wap" path="res://scripts/ui/SproutSelect.gd" id="1_6v1su"]
+[ext_resource type="PackedScene" uid="uid://byduq8qe85ytm" path="res://scenes/ui/CardBase.tscn" id="2_i8eym"]
 
 [node name="SproutSelect" type="Control"]
 layout_mode = 3
@@ -26,20 +26,21 @@ anchor_right = 1.0
 offset_left = 24.0
 offset_top = 16.0
 offset_right = -24.0
+offset_bottom = 23.0
+grow_horizontal = 2
 text = "Select 3 Sprouts"
 horizontal_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = -1
 anchor_right = 0.75
 anchor_bottom = 0.75
 offset_left = 24.0
 offset_top = 64.0
-offset_right = -24.0
+offset_right = 250.0
 offset_bottom = -96.0
 horizontal_scroll_mode = 0
-vertical_scroll_mode = 1
 
 [node name="SproutGrid" type="GridContainer" parent="Scroll"]
 layout_mode = 2
@@ -48,40 +49,54 @@ columns = 4
 [node name="SelectedList" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 1
-offset_left = 24.0
-offset_top = 320.0
-offset_right = 344.0
-offset_bottom = 480.0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -1084.0
+offset_top = 490.0
+offset_right = -26.0
+offset_bottom = 525.0
+grow_horizontal = 0
 
 [node name="SelectedLabel" type="Label" parent="SelectedList"]
+layout_mode = 2
 text = "Selected Sprouts:"
 
 [node name="BottomBar" type="HBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = 7
+anchor_left = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 24.0
 offset_top = -64.0
 offset_right = -24.0
 offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 3
 alignment = 1
 
 [node name="ContinueButton" type="Button" parent="BottomBar"]
+layout_mode = 2
 text = "Continue"
 
 [node name="BackButton" type="Button" parent="BottomBar"]
+layout_mode = 2
 text = "Back"
 
 [node name="StatusLabel" type="Label" parent="."]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = 7
+anchor_left = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 24.0
 offset_top = -112.0
 offset_right = -24.0
 offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
 text = "Select 3 sprouts"
 horizontal_alignment = 1
