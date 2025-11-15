@@ -105,6 +105,75 @@ var _cluster_rewards: Dictionary = {}
 const TILE_ID_OVERGROWTH: String = "tile.special.overgrowth"
 const TILE_ID_GROVE: String = "tile.special.grove"
 
+const ENEMY_CONFIG := {
+    "easy": {
+        "normal": {
+            "min_units": 2,
+            "max_units": 3,
+            "hp_min": 40,
+            "hp_max": 60,
+            "attack_min": 6,
+            "attack_max": 9,
+            "cooldown_min": 3.5,
+            "cooldown_max": 4.5
+        },
+        "totem": {
+            "min_units": 3,
+            "max_units": 4,
+            "hp_min": 60,
+            "hp_max": 80,
+            "attack_min": 8,
+            "attack_max": 11,
+            "cooldown_min": 3.0,
+            "cooldown_max": 4.0
+        }
+    },
+    "medium": {
+        "normal": {
+            "min_units": 3,
+            "max_units": 4,
+            "hp_min": 60,
+            "hp_max": 80,
+            "attack_min": 9,
+            "attack_max": 12,
+            "cooldown_min": 3.0,
+            "cooldown_max": 4.0
+        },
+        "totem": {
+            "min_units": 4,
+            "max_units": 5,
+            "hp_min": 80,
+            "hp_max": 100,
+            "attack_min": 11,
+            "attack_max": 15,
+            "cooldown_min": 2.8,
+            "cooldown_max": 3.6
+        }
+    },
+    "hard": {
+        "normal": {
+            "min_units": 4,
+            "max_units": 5,
+            "hp_min": 80,
+            "hp_max": 100,
+            "attack_min": 12,
+            "attack_max": 16,
+            "cooldown_min": 2.8,
+            "cooldown_max": 3.5
+        },
+        "totem": {
+            "min_units": 5,
+            "max_units": 6,
+            "hp_min": 100,
+            "hp_max": 130,
+            "attack_min": 15,
+            "attack_max": 20,
+            "cooldown_min": 2.5,
+            "cooldown_max": 3.2
+        }
+    }
+}
+
 var _tile_defs: Array = []
 var _tile_defs_by_id: Dictionary = {}
 var _dummy_tiles: Array = []
@@ -179,9 +248,17 @@ func _ready() -> void:
 				ctx.selected_sprout_ids
 			]
 		)
-	else:
-		print("ShroudWorld: WARNING - RunContext singleton not found")
-	print("ShroudWorld: ready")
+        else:
+                print("ShroudWorld: WARNING - RunContext singleton not found")
+        print("ShroudWorld: ready")
+
+func _get_current_difficulty_key() -> String:
+    if Engine.has_singleton("RunContext"):
+        var ctx := RunContext
+        var diff := str(ctx.selected_difficulty).to_lower()
+        if diff in ["easy", "medium", "hard"]:
+            return diff
+    return "easy"
 
 func _input(event: InputEvent) -> void:
     if _battle_overlay_active:
@@ -1288,22 +1365,68 @@ func _build_player_battle_team_from_sprouts() -> Array:
 		team.append(unit)
 	return team
 
-func _build_dummy_enemy_battle_team() -> Array:
-	var team: Array = []
-	for i in 3:
-		var cooldown := 3.5
-		var unit := {
-			"instance_id": -1,
-			"name": "Smog_%d" % i,
-			"max_hp": 70,
-			"hp": 70,
-			"attack": 9,
-			"cooldown": cooldown,
-			"cooldown_remaining": randf_range(0.0, cooldown),
-			"is_player": false
-		}
-		team.append(unit)
-	return team
+func _build_enemy_battle_team(mode: String, q: int, r: int) -> Array:
+        var difficulty_key := _get_current_difficulty_key()
+
+        var type_key := "normal"
+        if mode == "decay_totem":
+                type_key = "totem"
+
+        if mode == "debug":
+                type_key = "normal"
+
+        var diff_config := ENEMY_CONFIG.get(difficulty_key, null)
+        if diff_config == null:
+                diff_config = ENEMY_CONFIG["easy"]
+
+        var type_config := diff_config.get(type_key, null)
+        if type_config == null:
+                type_config = diff_config["normal"]
+
+        var min_units := int(type_config.get("min_units", 3))
+        var max_units := int(type_config.get("max_units", 3))
+        var hp_min := int(type_config.get("hp_min", 50))
+        var hp_max := int(type_config.get("hp_max", 80))
+        var attack_min := int(type_config.get("attack_min", 8))
+        var attack_max := int(type_config.get("attack_max", 12))
+        var cooldown_min := float(type_config.get("cooldown_min", 3.0))
+        var cooldown_max := float(type_config.get("cooldown_max", 4.0))
+
+        var unit_count := randi_range(min_units, max_units)
+
+        var team: Array = []
+        for i in unit_count:
+                var hp := randi_range(hp_min, hp_max)
+                var attack := randi_range(attack_min, attack_max)
+                var cooldown := randf_range(cooldown_min, cooldown_max)
+
+                var unit := {
+                        "instance_id": -1,
+                        "name": "",
+                        "max_hp": hp,
+                        "hp": hp,
+                        "attack": attack,
+                        "cooldown": cooldown,
+                        "cooldown_remaining": randf_range(0.0, cooldown),
+                        "is_player": false
+                }
+
+                if mode == "decay_totem":
+                        unit["name"] = "Totem Smog_%d" % i
+                elif mode == "decay_normal":
+                        unit["name"] = "Decay Smog_%d" % i
+                else:
+                        unit["name"] = "Smog_%d" % i
+
+                team.append(unit)
+
+        print("ShroudWorld: built enemy team (mode=%s, difficulty=%s, count=%d)" % [
+                mode,
+                difficulty_key,
+                team.size()
+        ])
+
+        return team
 
 func _can_attack_decay_at(q: int, r: int) -> bool:
 	if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
@@ -1366,7 +1489,11 @@ func _start_decay_attack_battle(q: int, r: int) -> void:
 		print("ShroudWorld: no living sprouts available to fight")
 		return
 
-	var enemy_team := _build_dummy_enemy_battle_team()
+        var enemy_mode := "decay_normal"
+        if totem_index != -1:
+                enemy_mode = "decay_totem"
+
+        var enemy_team := _build_enemy_battle_team(enemy_mode, q, r)
 
 	ctx.player_team = player_team
 	ctx.enemy_team = enemy_team
@@ -1414,14 +1541,14 @@ func _start_debug_battle() -> void:
 	var ctx := BattleContext
 	ctx.reset()
 
-	var player_team := _build_player_battle_team_from_sprouts()
-	if player_team.is_empty():
-		print("ShroudWorld: no sprouts available, using dummy player team")
-		player_team = _build_dummy_enemy_battle_team()
-		for unit in player_team:
-			unit["is_player"] = true
+        var player_team := _build_player_battle_team_from_sprouts()
+        if player_team.is_empty():
+                print("ShroudWorld: no sprouts available, using dummy player team")
+                player_team = _build_enemy_battle_team("debug", -1, -1)
+                for unit in player_team:
+                        unit["is_player"] = true
 
-	var enemy_team := _build_dummy_enemy_battle_team()
+        var enemy_team := _build_enemy_battle_team("debug", -1, -1)
 
 	ctx.player_team = player_team
 	ctx.enemy_team = enemy_team
