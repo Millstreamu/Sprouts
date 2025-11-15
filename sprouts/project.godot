@@ -15,12 +15,13 @@ run/main_scene="res://scenes/meta/MainMenu.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+MetaProgress="*res://scripts/meta/MetaProgress.gd"
+ChallengeContext="*res://scripts/meta/ChallengeContext.gd"
+CommuneManager="*res://scripts/world/CommuneManager.gd"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-
-[autoload]
-MetaProgress="*res://scripts/meta/MetaProgress.gd"
-ChallengeContext="*res://scripts/meta/ChallengeContext.gd"
-CommuneManager="*res://scripts/world/CommuneManager.gd"

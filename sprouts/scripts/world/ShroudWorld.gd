@@ -100,72 +100,72 @@ const TILE_ID_OVERGROWTH: String = "tile.special.overgrowth"
 const TILE_ID_GROVE: String = "tile.special.grove"
 
 const ENEMY_CONFIG := {
-    "easy": {
-        "normal": {
-            "min_units": 2,
-            "max_units": 3,
-            "hp_min": 40,
-            "hp_max": 60,
-            "attack_min": 6,
-            "attack_max": 9,
-            "cooldown_min": 3.5,
-            "cooldown_max": 4.5
-        },
-        "totem": {
-            "min_units": 3,
-            "max_units": 4,
-            "hp_min": 60,
-            "hp_max": 80,
-            "attack_min": 8,
-            "attack_max": 11,
-            "cooldown_min": 3.0,
-            "cooldown_max": 4.0
-        }
-    },
-    "medium": {
-        "normal": {
-            "min_units": 3,
-            "max_units": 4,
-            "hp_min": 60,
-            "hp_max": 80,
-            "attack_min": 9,
-            "attack_max": 12,
-            "cooldown_min": 3.0,
-            "cooldown_max": 4.0
-        },
-        "totem": {
-            "min_units": 4,
-            "max_units": 5,
-            "hp_min": 80,
-            "hp_max": 100,
-            "attack_min": 11,
-            "attack_max": 15,
-            "cooldown_min": 2.8,
-            "cooldown_max": 3.6
-        }
-    },
-    "hard": {
-        "normal": {
-            "min_units": 4,
-            "max_units": 5,
-            "hp_min": 80,
-            "hp_max": 100,
-            "attack_min": 12,
-            "attack_max": 16,
-            "cooldown_min": 2.8,
-            "cooldown_max": 3.5
-        },
-        "totem": {
-            "min_units": 5,
-            "max_units": 6,
-            "hp_min": 100,
-            "hp_max": 130,
-            "attack_min": 15,
-            "attack_max": 20,
-            "cooldown_min": 2.5,
-            "cooldown_max": 3.2
-        }
-    }
+	"easy": {
+		"normal": {
+			"min_units": 2,
+			"max_units": 3,
+			"hp_min": 40,
+			"hp_max": 60,
+			"attack_min": 6,
+			"attack_max": 9,
+			"cooldown_min": 3.5,
+			"cooldown_max": 4.5
+		},
+		"totem": {
+			"min_units": 3,
+			"max_units": 4,
+			"hp_min": 60,
+			"hp_max": 80,
+			"attack_min": 8,
+			"attack_max": 11,
+			"cooldown_min": 3.0,
+			"cooldown_max": 4.0
+		}
+	},
+	"medium": {
+		"normal": {
+			"min_units": 3,
+			"max_units": 4,
+			"hp_min": 60,
+			"hp_max": 80,
+			"attack_min": 9,
+			"attack_max": 12,
+			"cooldown_min": 3.0,
+			"cooldown_max": 4.0
+		},
+		"totem": {
+			"min_units": 4,
+			"max_units": 5,
+			"hp_min": 80,
+			"hp_max": 100,
+			"attack_min": 11,
+			"attack_max": 15,
+			"cooldown_min": 2.8,
+			"cooldown_max": 3.6
+		}
+	},
+	"hard": {
+		"normal": {
+			"min_units": 4,
+			"max_units": 5,
+			"hp_min": 80,
+			"hp_max": 100,
+			"attack_min": 12,
+			"attack_max": 16,
+			"cooldown_min": 2.8,
+			"cooldown_max": 3.5
+		},
+		"totem": {
+			"min_units": 5,
+			"max_units": 6,
+			"hp_min": 100,
+			"hp_max": 130,
+			"attack_min": 15,
+			"attack_max": 20,
+			"cooldown_min": 2.5,
+			"cooldown_max": 3.2
+		}
+	}
 }
 
 var _tile_defs: Array = []
@@ -179,185 +179,185 @@ var _res_earth: int = 0
 var _res_souls: int = 0
 
 func _ready() -> void:
-    _back_button.pressed.connect(_on_back_pressed)
-    if is_instance_valid(_commune_window):
-        _commune_window.offer_chosen.connect(_on_commune_offer_chosen)
-        _commune_window.visible = false
-    _init_tiles()
-    _init_decay_grid()
-    _load_tile_defs()
-    _cluster_rewards.clear()
-    _turn_number = 1
-    _phase = PHASE_COMMUNE
-    _run_over = false
-    _run_result = ""
-    _run_sprouts_spawned = 0
-    _run_sprouts_fallen = 0
-    _run_initial_decay_totems = 0
-    _current_tile_id = ""
-    _current_tile_name = ""
-    _has_placed_this_turn = false
-    _res_nature = 0
-    _res_water = 0
-    _res_earth = 0
-    _res_souls = 0
-    if is_instance_valid(_world_hud):
-        _world_hud.next_turn_requested.connect(_on_hud_next_turn_requested)
-        _refresh_hud_resources()
-    if is_instance_valid(_tile_info_panel):
-        _tile_info_panel.show_empty()
-        _tile_info_panel.visible = _tile_info_enabled
-    _spawn_initial_decay_sources()
-    _init_totems_for_run()
-    _recompute_clusters()
-    _apply_cluster_threshold_rewards()
-    _update_turn_and_phase_labels()
-    _update_tile_panel()
-    _update_resource_label()
-    _start_new_turn()
-    _update_selector_position()
-    _update_tile_info_for_selector()
-    if is_instance_valid(_hex_grid):
-        _hex_grid.update()
-    _selector.update()
-    if is_instance_valid(_sprout_registry_overlay):
-        _sprout_registry_overlay.visible = false
-    _update_sprout_registry_view()
-    if is_instance_valid(_battle_overlay_layer):
-        _battle_overlay_layer.visible = false
-    if is_instance_valid(_run_end_overlay):
-        _run_end_overlay.visible = false
-    if get_tree().has_node(RUN_CONTEXT_PATH):
-        var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
-        ctx.debug_print()
-        print(
-            "ShroudWorld: starting run with totem=%s difficulty=%s sprouts=%s" % [
-                ctx.selected_totem_id,
-                str(ctx.selected_difficulty),
-                ctx.selected_sprout_ids
-            ]
-        )
-    else:
-        print("ShroudWorld: WARNING - RunContext singleton not found")
-    print("ShroudWorld: ready")
+	_back_button.pressed.connect(_on_back_pressed)
+	if is_instance_valid(_commune_window):
+		_commune_window.offer_chosen.connect(_on_commune_offer_chosen)
+		_commune_window.visible = false
+	_init_tiles()
+	_init_decay_grid()
+	_load_tile_defs()
+	_cluster_rewards.clear()
+	_turn_number = 1
+	_phase = PHASE_COMMUNE
+	_run_over = false
+	_run_result = ""
+	_run_sprouts_spawned = 0
+	_run_sprouts_fallen = 0
+	_run_initial_decay_totems = 0
+	_current_tile_id = ""
+	_current_tile_name = ""
+	_has_placed_this_turn = false
+	_res_nature = 0
+	_res_water = 0
+	_res_earth = 0
+	_res_souls = 0
+	if is_instance_valid(_world_hud):
+		_world_hud.next_turn_requested.connect(_on_hud_next_turn_requested)
+		_refresh_hud_resources()
+	if is_instance_valid(_tile_info_panel):
+		_tile_info_panel.show_empty()
+		_tile_info_panel.visible = _tile_info_enabled
+	_spawn_initial_decay_sources()
+	_init_totems_for_run()
+	_recompute_clusters()
+	_apply_cluster_threshold_rewards()
+	_update_turn_and_phase_labels()
+	_update_tile_panel()
+	_update_resource_label()
+	_start_new_turn()
+	_update_selector_position()
+	_update_tile_info_for_selector()
+	if is_instance_valid(_hex_grid):
+		_hex_grid.update()
+	_selector.update()
+	if is_instance_valid(_sprout_registry_overlay):
+		_sprout_registry_overlay.visible = false
+	_update_sprout_registry_view()
+	if is_instance_valid(_battle_overlay_layer):
+		_battle_overlay_layer.visible = false
+	if is_instance_valid(_run_end_overlay):
+		_run_end_overlay.visible = false
+	if get_tree().has_node(RUN_CONTEXT_PATH):
+		var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
+		ctx.debug_print()
+		print(
+			"ShroudWorld: starting run with totem=%s difficulty=%s sprouts=%s" % [
+				ctx.selected_totem_id,
+				str(ctx.selected_difficulty),
+				ctx.selected_sprout_ids
+			]
+		)
+	else:
+		print("ShroudWorld: WARNING - RunContext singleton not found")
+	print("ShroudWorld: ready")
 
 func _get_current_difficulty_key() -> String:
-    if Engine.has_singleton("RunContext"):
-        var ctx := RunContext
-        var diff := str(ctx.selected_difficulty).to_lower()
-        if diff in ["easy", "medium", "hard"]:
-            return diff
-    return "easy"
+	if Engine.has_singleton("RunContext"):
+		var ctx := RunContext
+		var diff := str(ctx.selected_difficulty).to_lower()
+		if diff in ["easy", "medium", "hard"]:
+			return diff
+	return "easy"
 
 func _input(event: InputEvent) -> void:
-    if _run_over:
-        if Input.is_action_just_pressed("ui_accept"):
-            print("ShroudWorld: returning to Main Menu after run end")
-            get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
-            accept_event()
-        return
+	if _run_over:
+		if Input.is_action_just_pressed("ui_accept"):
+			print("ShroudWorld: returning to Main Menu after run end")
+			get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+			accept_event()
+		return
 
-    if _battle_overlay_active:
-        return
+	if _battle_overlay_active:
+		return
 
-    if _commune_active:
-        return
+	if _commune_active:
+		return
 
-    if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
-        if Input.is_action_just_pressed("ui_up"):
-            _sprout_registry_move_selection(-1)
-            accept_event()
-            return
-        if Input.is_action_just_pressed("ui_down"):
-            _sprout_registry_move_selection(1)
-            accept_event()
-            return
-        if Input.is_action_just_pressed("ui_cancel"):
-            _hide_sprout_registry()
-            accept_event()
-            return
-        if event is InputEventKey and event.pressed and not event.echo:
-            if event.keycode == Key.KEY_G:
-                _try_level_selected_sprout_with_soul_seeds()
-                accept_event()
-                return
-            if event.keycode == Key.KEY_R:
-                _hide_sprout_registry()
-                accept_event()
-                return
-        return
+	if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
+		if Input.is_action_just_pressed("ui_up"):
+			_sprout_registry_move_selection(-1)
+			accept_event()
+			return
+		if Input.is_action_just_pressed("ui_down"):
+			_sprout_registry_move_selection(1)
+			accept_event()
+			return
+		if Input.is_action_just_pressed("ui_cancel"):
+			_hide_sprout_registry()
+			accept_event()
+			return
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == Key.KEY_G:
+				_try_level_selected_sprout_with_soul_seeds()
+				accept_event()
+				return
+			if event.keycode == Key.KEY_R:
+				_hide_sprout_registry()
+				accept_event()
+				return
+		return
 
-    if event is InputEventKey and event.pressed and not event.echo:
-        if event.keycode == Key.KEY_R:
-            _toggle_sprout_registry()
-            accept_event()
-            return
-        if event.keycode == Key.KEY_C:
-            _debug_print_clusters()
-            accept_event()
-            return
-        if event.keycode == Key.KEY_B:
-            _start_debug_battle()
-            accept_event()
-            return
-        if event.keycode == Key.KEY_V:
-            _try_end_turn_from_input()
-            accept_event()
-            return
-        if event.keycode == Key.KEY_M:
-            _tile_info_enabled = not _tile_info_enabled
-            if is_instance_valid(_tile_info_panel):
-                _tile_info_panel.visible = _tile_info_enabled
-                if _tile_info_enabled:
-                    _refresh_tile_info_for_cursor()
-            accept_event()
-            return
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == Key.KEY_R:
+			_toggle_sprout_registry()
+			accept_event()
+			return
+		if event.keycode == Key.KEY_C:
+			_debug_print_clusters()
+			accept_event()
+			return
+		if event.keycode == Key.KEY_B:
+			_start_debug_battle()
+			accept_event()
+			return
+		if event.keycode == Key.KEY_V:
+			_try_end_turn_from_input()
+			accept_event()
+			return
+		if event.keycode == Key.KEY_M:
+			_tile_info_enabled = not _tile_info_enabled
+			if is_instance_valid(_tile_info_panel):
+				_tile_info_panel.visible = _tile_info_enabled
+				if _tile_info_enabled:
+					_refresh_tile_info_for_cursor()
+			accept_event()
+			return
 
-    if Input.is_action_just_pressed("ui_cancel"):
-        if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
-            _hide_sprout_registry()
-            accept_event()
-            return
-        _go_back_to_main_menu()
-        accept_event()
-        return
+	if Input.is_action_just_pressed("ui_cancel"):
+		if is_instance_valid(_sprout_registry_overlay) and _sprout_registry_overlay.visible:
+			_hide_sprout_registry()
+			accept_event()
+			return
+		_go_back_to_main_menu()
+		accept_event()
+		return
 
-    if _phase != PHASE_PLAYER:
-        return
+	if _phase != PHASE_PLAYER:
+		return
 
-    if Input.is_action_just_pressed("ui_accept"):
-        if _selector_r >= 0 and _selector_r < GRID_HEIGHT and _selector_q >= 0 and _selector_q < GRID_WIDTH:
-            if _decay_grid[_selector_r][_selector_q]:
-                _start_decay_attack_battle(_selector_q, _selector_r)
-                accept_event()
-                return
+	if Input.is_action_just_pressed("ui_accept"):
+		if _selector_r >= 0 and _selector_r < GRID_HEIGHT and _selector_q >= 0 and _selector_q < GRID_WIDTH:
+			if _decay_grid[_selector_r][_selector_q]:
+				_start_decay_attack_battle(_selector_q, _selector_r)
+				accept_event()
+				return
 
-        _place_tile_at_selector()
-        accept_event()
-        return
+		_place_tile_at_selector()
+		accept_event()
+		return
 
-    if Input.is_action_just_pressed("ui_left"):
-        _move_selector(-1, 0)
-        accept_event()
-    elif Input.is_action_just_pressed("ui_right"):
-        _move_selector(1, 0)
-        accept_event()
-    elif Input.is_action_just_pressed("ui_up"):
-        _move_selector(0, -1)
-        accept_event()
-    elif Input.is_action_just_pressed("ui_down"):
-        _move_selector(0, 1)
-        accept_event()
+	if Input.is_action_just_pressed("ui_left"):
+		_move_selector(-1, 0)
+		accept_event()
+	elif Input.is_action_just_pressed("ui_right"):
+		_move_selector(1, 0)
+		accept_event()
+	elif Input.is_action_just_pressed("ui_up"):
+		_move_selector(0, -1)
+		accept_event()
+	elif Input.is_action_just_pressed("ui_down"):
+		_move_selector(0, 1)
+		accept_event()
 
 func _try_end_turn_from_input() -> void:
-    if _run_over:
-        return
-    if _battle_overlay_active:
-        return
-    _end_turn()
+	if _run_over:
+		return
+	if _battle_overlay_active:
+		return
+	_end_turn()
 
 func _on_hud_next_turn_requested() -> void:
-    _try_end_turn_from_input()
+	_try_end_turn_from_input()
 
 func _init_tiles() -> void:
 	_tiles.clear()
@@ -498,16 +498,16 @@ func _try_spawn_sprout_from_cluster(q: int, r: int, category: String, threshold:
 	}
 	_next_sprout_instance_id += 1
 
-        _sprouts.append(sprout)
-        _run_sprouts_spawned += 1
-        print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d) from cluster reward (threshold %d, category %s)" % [
-                sprout_id,
-                sprout.get("instance_id"),
-                q,
-                r,
-                threshold,
-                category
-        ])
+		_sprouts.append(sprout)
+		_run_sprouts_spawned += 1
+		print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d) from cluster reward (threshold %d, category %s)" % [
+				sprout_id,
+				sprout.get("instance_id"),
+				q,
+				r,
+				threshold,
+				category
+		])
 
 	_update_sprout_registry_view()
 	return true
@@ -561,212 +561,212 @@ func _flood_fill_cluster(start_q: int, start_r: int, category: String) -> void:
 	_clusters[cluster_id] = cluster_data
 
 func _get_current_tile_selection_text() -> String:
-    if _current_tile_id.is_empty():
-        return "Current Tile: None"
-    return "Current Tile: %s" % _current_tile_name
+	if _current_tile_id.is_empty():
+		return "Current Tile: None"
+	return "Current Tile: %s" % _current_tile_name
 
 func _get_cursor_coords() -> Vector2i:
-    return Vector2i(_selector_q, _selector_r)
+	return Vector2i(_selector_q, _selector_r)
 
 func _build_tile_info_for(q: int, r: int) -> Dictionary:
-    var info: Dictionary = {
-        "name": "Unknown",
-        "category": "Unknown",
-        "tags": [],
-        "cluster_type": "N/A",
-        "cluster_size": 0,
-        "state": "Unknown",
-        "output_summary": "N/A",
-        "description": ""
-    }
+	var info: Dictionary = {
+		"name": "Unknown",
+		"category": "Unknown",
+		"tags": [],
+		"cluster_type": "N/A",
+		"cluster_size": 0,
+		"state": "Unknown",
+		"output_summary": "N/A",
+		"description": ""
+	}
 
-    if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
-        info["name"] = "Outside Map"
-        info["category"] = "N/A"
-        info["state"] = "Empty"
-        return info
+	if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
+		info["name"] = "Outside Map"
+		info["category"] = "N/A"
+		info["state"] = "Empty"
+		return info
 
-    var tile_id := ""
-    if _tiles.size() > r and _tiles[r].size() > q:
-        tile_id = str(_tiles[r][q])
+	var tile_id := ""
+	if _tiles.size() > r and _tiles[r].size() > q:
+		tile_id = str(_tiles[r][q])
 
-    var is_decay := false
-    if _decay_grid.size() > r and _decay_grid[r].size() > q:
-        is_decay = bool(_decay_grid[r][q])
+	var is_decay := false
+	if _decay_grid.size() > r and _decay_grid[r].size() > q:
+		is_decay = bool(_decay_grid[r][q])
 
-    if tile_id.is_empty() and not is_decay:
-        info["name"] = "Empty Tile"
-        info["category"] = "None"
-        info["state"] = "Empty"
-        return info
+	if tile_id.is_empty() and not is_decay:
+		info["name"] = "Empty Tile"
+		info["category"] = "None"
+		info["state"] = "Empty"
+		return info
 
-    if is_decay:
-        info["name"] = "Creeping Decay"
-        info["category"] = "Decay"
-        info["tags"] = ["DECAY"]
-        info["state"] = "Decay"
-        var decay_desc := "Spreading corruption. Destroys life tiles and totems if left unchecked."
-        if not tile_id.is_empty():
-            var target_name := tile_id
-            if _tile_defs_by_id.has(tile_id):
-                var target_def := _tile_defs_by_id[tile_id]
-                target_name = str(target_def.get("name", tile_id))
-            decay_desc += " Currently overrunning %s." % target_name
-        info["description"] = decay_desc
-        return info
+	if is_decay:
+		info["name"] = "Creeping Decay"
+		info["category"] = "Decay"
+		info["tags"] = ["DECAY"]
+		info["state"] = "Decay"
+		var decay_desc := "Spreading corruption. Destroys life tiles and totems if left unchecked."
+		if not tile_id.is_empty():
+			var target_name := tile_id
+			if _tile_defs_by_id.has(tile_id):
+				var target_def := _tile_defs_by_id[tile_id]
+				target_name = str(target_def.get("name", tile_id))
+			decay_desc += " Currently overrunning %s." % target_name
+		info["description"] = decay_desc
+		return info
 
-    var display_name := tile_id
-    var category := "Unknown"
-    var description := ""
-    var tags: Array[String] = []
+	var display_name := tile_id
+	var category := "Unknown"
+	var description := ""
+	var tags: Array[String] = []
 
-    if _tile_defs_by_id.has(tile_id):
-        var def := _tile_defs_by_id[tile_id]
-        display_name = str(def.get("name", tile_id))
-        category = str(def.get("category", "Unknown"))
-        description = str(def.get("description", ""))
-        var def_tags := def.get("tags", [])
-        if def_tags is Array:
-            for tag in def_tags:
-                tags.append(str(tag))
-        elif def_tags is PackedStringArray:
-            var packed_tags := def_tags as PackedStringArray
-            for tag in packed_tags:
-                tags.append(tag)
-    else:
-        display_name = tile_id
-        category = "Unknown"
+	if _tile_defs_by_id.has(tile_id):
+		var def := _tile_defs_by_id[tile_id]
+		display_name = str(def.get("name", tile_id))
+		category = str(def.get("category", "Unknown"))
+		description = str(def.get("description", ""))
+		var def_tags := def.get("tags", [])
+		if def_tags is Array:
+			for tag in def_tags:
+				tags.append(str(tag))
+		elif def_tags is PackedStringArray:
+			var packed_tags := def_tags as PackedStringArray
+			for tag in packed_tags:
+				tags.append(tag)
+	else:
+		display_name = tile_id
+		category = "Unknown"
 
-    var state := "Normal"
-    if tile_id == TILE_ID_OVERGROWTH:
-        state = "Overgrowth"
-        var turns_until_grove := 3
-        if _overgrowth_age.size() > r and _overgrowth_age[r].size() > q:
-            turns_until_grove = max(0, 3 - int(_overgrowth_age[r][q]))
-        if turns_until_grove < 0:
-            turns_until_grove = 0
-        var overgrowth_note := "Overgrowth that will become a Grove soon."
-        if turns_until_grove > 0:
-            overgrowth_note = "Overgrowth that will become a Grove in %d turn(s)." % turns_until_grove
-        if description.is_empty():
-            description = overgrowth_note
-        else:
-            description = "%s\n%s" % [description, overgrowth_note]
-        if not tags.has("OVERGROWTH"):
-            tags.append("OVERGROWTH")
-    elif tile_id == TILE_ID_GROVE:
-        state = "Grove"
-        var grove_note := "A fragile grove that can spawn sprouts but is vulnerable to Decay."
-        if description.is_empty():
-            description = grove_note
-        else:
-            description = "%s\n%s" % [description, grove_note]
-        if not tags.has("GROVE"):
-            tags.append("GROVE")
+	var state := "Normal"
+	if tile_id == TILE_ID_OVERGROWTH:
+		state = "Overgrowth"
+		var turns_until_grove := 3
+		if _overgrowth_age.size() > r and _overgrowth_age[r].size() > q:
+			turns_until_grove = max(0, 3 - int(_overgrowth_age[r][q]))
+		if turns_until_grove < 0:
+			turns_until_grove = 0
+		var overgrowth_note := "Overgrowth that will become a Grove soon."
+		if turns_until_grove > 0:
+			overgrowth_note = "Overgrowth that will become a Grove in %d turn(s)." % turns_until_grove
+		if description.is_empty():
+			description = overgrowth_note
+		else:
+			description = "%s\n%s" % [description, overgrowth_note]
+		if not tags.has("OVERGROWTH"):
+			tags.append("OVERGROWTH")
+	elif tile_id == TILE_ID_GROVE:
+		state = "Grove"
+		var grove_note := "A fragile grove that can spawn sprouts but is vulnerable to Decay."
+		if description.is_empty():
+			description = grove_note
+		else:
+			description = "%s\n%s" % [description, grove_note]
+		if not tags.has("GROVE"):
+			tags.append("GROVE")
 
-    if description.is_empty():
-        description = "No description available."
+	if description.is_empty():
+		description = "No description available."
 
-    info["name"] = display_name
-    info["category"] = category
-    info["tags"] = tags
-    info["state"] = state
-    info["output_summary"] = _build_output_summary_for_tile(tile_id)
-    info["description"] = description
+	info["name"] = display_name
+	info["category"] = category
+	info["tags"] = tags
+	info["state"] = state
+	info["output_summary"] = _build_output_summary_for_tile(tile_id)
+	info["description"] = description
 
-    var cluster_type := "N/A"
-    var cluster_size := 0
-    if _cluster_ids.size() > r and _cluster_ids[r].size() > q:
-        var cluster_id := int(_cluster_ids[r][q])
-        if cluster_id != -1 and _clusters.has(cluster_id):
-            var cluster := _clusters[cluster_id]
-            cluster_type = str(cluster.get("category", "N/A"))
-            cluster_size = int(cluster.get("size", 0))
+	var cluster_type := "N/A"
+	var cluster_size := 0
+	if _cluster_ids.size() > r and _cluster_ids[r].size() > q:
+		var cluster_id := int(_cluster_ids[r][q])
+		if cluster_id != -1 and _clusters.has(cluster_id):
+			var cluster := _clusters[cluster_id]
+			cluster_type = str(cluster.get("category", "N/A"))
+			cluster_size = int(cluster.get("size", 0))
 
-    if cluster_type == "N/A" and (category == "Nature" or category == "Water" or category == "Earth"):
-        cluster_type = category
+	if cluster_type == "N/A" and (category == "Nature" or category == "Water" or category == "Earth"):
+		cluster_type = category
 
-    info["cluster_type"] = cluster_type
-    info["cluster_size"] = cluster_size
+	info["cluster_type"] = cluster_type
+	info["cluster_size"] = cluster_size
 
-    return info
+	return info
 
 func _build_output_summary_for_tile(tile_id: String) -> String:
-    if tile_id.is_empty():
-        return "N/A"
-    if not _tile_defs_by_id.has(tile_id):
-        return "N/A"
+	if tile_id.is_empty():
+		return "N/A"
+	if not _tile_defs_by_id.has(tile_id):
+		return "N/A"
 
-    var def := _tile_defs_by_id[tile_id]
-    var base_output := def.get("base_output", {})
-    if not (base_output is Dictionary):
-        return "N/A"
+	var def := _tile_defs_by_id[tile_id]
+	var base_output := def.get("base_output", {})
+	if not (base_output is Dictionary):
+		return "N/A"
 
-    var output_dict := base_output as Dictionary
-    var nature_out := int(output_dict.get("nature", 0))
-    var water_out := int(output_dict.get("water", 0))
-    var earth_out := int(output_dict.get("earth", 0))
-    var souls_out := int(output_dict.get("souls", 0))
+	var output_dict := base_output as Dictionary
+	var nature_out := int(output_dict.get("nature", 0))
+	var water_out := int(output_dict.get("water", 0))
+	var earth_out := int(output_dict.get("earth", 0))
+	var souls_out := int(output_dict.get("souls", 0))
 
-    var parts: Array[String] = []
-    if nature_out != 0:
-        parts.append("Nature %+d/turn" % nature_out)
-    if earth_out != 0:
-        parts.append("Earth %+d/turn" % earth_out)
-    if water_out != 0:
-        parts.append("Water %+d/turn" % water_out)
-    if souls_out != 0:
-        parts.append("Soul Seeds %+d/turn" % souls_out)
+	var parts: Array[String] = []
+	if nature_out != 0:
+		parts.append("Nature %+d/turn" % nature_out)
+	if earth_out != 0:
+		parts.append("Earth %+d/turn" % earth_out)
+	if water_out != 0:
+		parts.append("Water %+d/turn" % water_out)
+	if souls_out != 0:
+		parts.append("Soul Seeds %+d/turn" % souls_out)
 
-    if parts.is_empty():
-        return "N/A"
+	if parts.is_empty():
+		return "N/A"
 
-    return ", ".join(parts)
+	return ", ".join(parts)
 
 func _refresh_tile_info_for_cursor() -> void:
-    if not _tile_info_enabled:
-        return
-    if not is_instance_valid(_tile_info_panel):
-        return
+	if not _tile_info_enabled:
+		return
+	if not is_instance_valid(_tile_info_panel):
+		return
 
-    var coords := _get_cursor_coords()
-    var info := _build_tile_info_for(coords.x, coords.y)
-    _tile_info_panel.show_tile(info)
+	var coords := _get_cursor_coords()
+	var info := _build_tile_info_for(coords.x, coords.y)
+	_tile_info_panel.show_tile(info)
 
 func _update_tile_info_for_selector() -> void:
-    var selection_text := _get_current_tile_selection_text()
-    var q := _selector_q
-    var r := _selector_r
+	var selection_text := _get_current_tile_selection_text()
+	var q := _selector_q
+	var r := _selector_r
 
-    var label_text := "%s\nTile: None" % selection_text
+	var label_text := "%s\nTile: None" % selection_text
 
-    if r >= 0 and r < GRID_HEIGHT and q >= 0 and q < GRID_WIDTH:
-        var tile_id := str(_tiles[r][q])
-        var is_decay := false
-        if _decay_grid.size() > r and _decay_grid[r].size() > q:
-            is_decay = bool(_decay_grid[r][q])
-        if tile_id != "" or is_decay:
-            var tile_name := "None"
-            if is_decay:
-                tile_name = "Creeping Decay"
-            elif _tile_defs_by_id.has(tile_id):
-                var def := _tile_defs_by_id[tile_id]
-                tile_name = str(def.get("name", tile_id))
-            else:
-                tile_name = tile_id
-            label_text = "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
-            if not is_decay:
-                var cluster_id := _cluster_ids[r][q]
-                if cluster_id != -1 and _clusters.has(cluster_id):
-                    var c := _clusters[cluster_id]
-                    var cat := str(c.get("category", ""))
-                    var size := int(c.get("size", 0))
-                    label_text += " | Cluster: %s size %d" % [cat, size]
+	if r >= 0 and r < GRID_HEIGHT and q >= 0 and q < GRID_WIDTH:
+		var tile_id := str(_tiles[r][q])
+		var is_decay := false
+		if _decay_grid.size() > r and _decay_grid[r].size() > q:
+			is_decay = bool(_decay_grid[r][q])
+		if tile_id != "" or is_decay:
+			var tile_name := "None"
+			if is_decay:
+				tile_name = "Creeping Decay"
+			elif _tile_defs_by_id.has(tile_id):
+				var def := _tile_defs_by_id[tile_id]
+				tile_name = str(def.get("name", tile_id))
+			else:
+				tile_name = tile_id
+			label_text = "%s\nTile: %s at (%d, %d)" % [selection_text, tile_name, q, r]
+			if not is_decay:
+				var cluster_id := _cluster_ids[r][q]
+				if cluster_id != -1 and _clusters.has(cluster_id):
+					var c := _clusters[cluster_id]
+					var cat := str(c.get("category", ""))
+					var size := int(c.get("size", 0))
+					label_text += " | Cluster: %s size %d" % [cat, size]
 
-    if is_instance_valid(_tile_info_label):
-        _tile_info_label.text = label_text
+	if is_instance_valid(_tile_info_label):
+		_tile_info_label.text = label_text
 
-    _refresh_tile_info_for_cursor()
+	_refresh_tile_info_for_cursor()
 
 func _debug_print_clusters() -> void:
 	print("ShroudWorld: debug clusters, count = %d" % _clusters.size())
@@ -801,11 +801,11 @@ func _get_initial_decay_sources_for_difficulty() -> int:
 			return 1
 
 func _spawn_initial_decay_sources() -> void:
-        var count := _get_initial_decay_sources_for_difficulty()
-        var attempts := 0
-        var max_attempts := 100
+		var count := _get_initial_decay_sources_for_difficulty()
+		var attempts := 0
+		var max_attempts := 100
 
-        while count > 0 and attempts < max_attempts:
+		while count > 0 and attempts < max_attempts:
 		attempts += 1
 		var edge := randi() % 4
 		var q := 0
@@ -830,161 +830,161 @@ func _spawn_initial_decay_sources() -> void:
 		_decay_grid[r][q] = true
 		_decay_count += 1
 		count -= 1
-                print("ShroudWorld: spawned initial decay at (%d, %d)" % [q, r])
+				print("ShroudWorld: spawned initial decay at (%d, %d)" % [q, r])
 
-        if is_instance_valid(_hex_grid):
-                _hex_grid.update()
+		if is_instance_valid(_hex_grid):
+				_hex_grid.update()
 
 func _trigger_run_victory() -> void:
-        if _run_over:
-                return
-        _run_over = true
-        _run_result = "victory"
+		if _run_over:
+				return
+		_run_over = true
+		_run_result = "victory"
 
-        if is_instance_valid(_run_end_overlay):
-                _run_end_overlay.visible = true
-        if is_instance_valid(_run_end_result_label):
-                _run_end_result_label.text = "Victory – All Decay Totems destroyed"
-        if is_instance_valid(_run_end_hint_label):
-                _run_end_hint_label.text = "Press Space to return to Main Menu"
+		if is_instance_valid(_run_end_overlay):
+				_run_end_overlay.visible = true
+		if is_instance_valid(_run_end_result_label):
+				_run_end_result_label.text = "Victory – All Decay Totems destroyed"
+		if is_instance_valid(_run_end_hint_label):
+				_run_end_hint_label.text = "Press Space to return to Main Menu"
 
-        _populate_run_end_stats()
-        if Engine.has_singleton("ChallengeContext"):
-                var stats := _build_run_stats_for_challenges()
-                ChallengeContext.update_after_run("victory", stats)
-        print("ShroudWorld: run ended with VICTORY")
+		_populate_run_end_stats()
+		if Engine.has_singleton("ChallengeContext"):
+				var stats := _build_run_stats_for_challenges()
+				ChallengeContext.update_after_run("victory", stats)
+		print("ShroudWorld: run ended with VICTORY")
 
 func _trigger_run_defeat(reason: String) -> void:
-        if _run_over:
-                return
-        _run_over = true
-        _run_result = "defeat"
+		if _run_over:
+				return
+		_run_over = true
+		_run_result = "defeat"
 
-        if is_instance_valid(_run_end_overlay):
-                _run_end_overlay.visible = true
-        if is_instance_valid(_run_end_result_label):
-                match reason:
-                        "totem_consumed":
-                                _run_end_result_label.text = "Defeat – Totem consumed by Decay"
-                        "no_valid_placements":
-                                _run_end_result_label.text = "Defeat – No valid placements remain"
-                        _:
-                                _run_end_result_label.text = "Defeat"
-        if is_instance_valid(_run_end_hint_label):
-                _run_end_hint_label.text = "Press Space to return to Main Menu"
+		if is_instance_valid(_run_end_overlay):
+				_run_end_overlay.visible = true
+		if is_instance_valid(_run_end_result_label):
+				match reason:
+						"totem_consumed":
+								_run_end_result_label.text = "Defeat – Totem consumed by Decay"
+						"no_valid_placements":
+								_run_end_result_label.text = "Defeat – No valid placements remain"
+						_:
+								_run_end_result_label.text = "Defeat"
+		if is_instance_valid(_run_end_hint_label):
+				_run_end_hint_label.text = "Press Space to return to Main Menu"
 
-        _populate_run_end_stats()
-        if Engine.has_singleton("ChallengeContext"):
-                var stats := _build_run_stats_for_challenges()
-                ChallengeContext.update_after_run("defeat", stats)
-        print("ShroudWorld: run ended with DEFEAT (%s)" % reason)
+		_populate_run_end_stats()
+		if Engine.has_singleton("ChallengeContext"):
+				var stats := _build_run_stats_for_challenges()
+				ChallengeContext.update_after_run("defeat", stats)
+		print("ShroudWorld: run ended with DEFEAT (%s)" % reason)
 
 func _populate_run_end_stats() -> void:
-        if not is_instance_valid(_run_end_stats_list):
-                return
+		if not is_instance_valid(_run_end_stats_list):
+				return
 
-        for child in _run_end_stats_list.get_children():
-                child.queue_free()
+		for child in _run_end_stats_list.get_children():
+				child.queue_free()
 
-        var turns_label := Label.new()
-        turns_label.text = "Turns survived: %d" % _turn_number
-        _run_end_stats_list.add_child(turns_label)
+		var turns_label := Label.new()
+		turns_label.text = "Turns survived: %d" % _turn_number
+		_run_end_stats_list.add_child(turns_label)
 
-        var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
-        if destroyed < 0:
-                destroyed = 0
+		var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
+		if destroyed < 0:
+				destroyed = 0
 
-        var totem_label := Label.new()
-        totem_label.text = "Decay Totems destroyed: %d / %d" % [
-                destroyed,
-                _run_initial_decay_totems
-        ]
-        _run_end_stats_list.add_child(totem_label)
+		var totem_label := Label.new()
+		totem_label.text = "Decay Totems destroyed: %d / %d" % [
+				destroyed,
+				_run_initial_decay_totems
+		]
+		_run_end_stats_list.add_child(totem_label)
 
-        var spawned_label := Label.new()
-        spawned_label.text = "Sprouts spawned: %d" % _run_sprouts_spawned
-        _run_end_stats_list.add_child(spawned_label)
+		var spawned_label := Label.new()
+		spawned_label.text = "Sprouts spawned: %d" % _run_sprouts_spawned
+		_run_end_stats_list.add_child(spawned_label)
 
-        var fallen_label := Label.new()
-        fallen_label.text = "Sprouts fallen: %d" % _run_sprouts_fallen
-        _run_end_stats_list.add_child(fallen_label)
+		var fallen_label := Label.new()
+		fallen_label.text = "Sprouts fallen: %d" % _run_sprouts_fallen
+		_run_end_stats_list.add_child(fallen_label)
 
 func _build_run_stats_for_challenges() -> Dictionary:
-        var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
-        if destroyed < 0:
-                destroyed = 0
-        return {
-                "turns": _turn_number,
-                "sprouts_spawned": _run_sprouts_spawned,
-                "sprouts_fallen": _run_sprouts_fallen,
-                "decay_totems_destroyed": destroyed
-        }
+		var destroyed := _run_initial_decay_totems - _alive_decay_totem_count
+		if destroyed < 0:
+				destroyed = 0
+		return {
+				"turns": _turn_number,
+				"sprouts_spawned": _run_sprouts_spawned,
+				"sprouts_fallen": _run_sprouts_fallen,
+				"decay_totems_destroyed": destroyed
+		}
 
 func _init_totems_for_run() -> void:
-        _decay_totems.clear()
-        _alive_decay_totem_count = 0
+		_decay_totems.clear()
+		_alive_decay_totem_count = 0
 
-        _player_totem_q = GRID_WIDTH / 2
-        _player_totem_r = GRID_HEIGHT / 2
+		_player_totem_q = GRID_WIDTH / 2
+		_player_totem_r = GRID_HEIGHT / 2
 
-        if _player_totem_r >= 0 and _player_totem_r < GRID_HEIGHT and _player_totem_q >= 0 and _player_totem_q < GRID_WIDTH:
-                if _decay_grid[_player_totem_r][_player_totem_q]:
-                        _decay_grid[_player_totem_r][_player_totem_q] = false
-                        _decay_count = max(_decay_count - 1, 0)
+		if _player_totem_r >= 0 and _player_totem_r < GRID_HEIGHT and _player_totem_q >= 0 and _player_totem_q < GRID_WIDTH:
+				if _decay_grid[_player_totem_r][_player_totem_q]:
+						_decay_grid[_player_totem_r][_player_totem_q] = false
+						_decay_count = max(_decay_count - 1, 0)
 
-        var totem_count: int = 1
-        if Engine.has_singleton("RunContext"):
-                var ctx := RunContext
-                var difficulty_value := ctx.selected_difficulty
-                var value_type := typeof(difficulty_value)
-                if value_type == TYPE_STRING:
-                        var diff := str(difficulty_value).to_lower()
-                        match diff:
-                                "easy":
-                                        totem_count = 1
-                                "medium":
-                                        totem_count = 2
-                                "hard":
-                                        totem_count = 3
-                                _:
-                                        totem_count = 1
-                else:
-                        var diff_int := int(difficulty_value)
-                        match diff_int:
-                                0:
-                                        totem_count = 1
-                                1:
-                                        totem_count = 2
-                                2:
-                                        totem_count = 3
-                                _:
-                                        totem_count = 1
+		var totem_count: int = 1
+		if Engine.has_singleton("RunContext"):
+				var ctx := RunContext
+				var difficulty_value := ctx.selected_difficulty
+				var value_type := typeof(difficulty_value)
+				if value_type == TYPE_STRING:
+						var diff := str(difficulty_value).to_lower()
+						match diff:
+								"easy":
+										totem_count = 1
+								"medium":
+										totem_count = 2
+								"hard":
+										totem_count = 3
+								_:
+										totem_count = 1
+				else:
+						var diff_int := int(difficulty_value)
+						match diff_int:
+								0:
+										totem_count = 1
+								1:
+										totem_count = 2
+								2:
+										totem_count = 3
+								_:
+										totem_count = 1
 
-        for i in totem_count:
-                var q := GRID_WIDTH - 4 + i
-                var r := GRID_HEIGHT / 2
+		for i in totem_count:
+				var q := GRID_WIDTH - 4 + i
+				var r := GRID_HEIGHT / 2
 
-                q = clampi(q, 0, GRID_WIDTH - 1)
-                r = clampi(r, 0, GRID_HEIGHT - 1)
+				q = clampi(q, 0, GRID_WIDTH - 1)
+				r = clampi(r, 0, GRID_HEIGHT - 1)
 
-                if not _decay_grid[r][q]:
-                        _decay_grid[r][q] = true
-                        _decay_count += 1
+				if not _decay_grid[r][q]:
+						_decay_grid[r][q] = true
+						_decay_count += 1
 
-                var data := {
-                        "q": q,
-                        "r": r,
-                        "alive": true
-                }
-                _decay_totems.append(data)
+				var data := {
+						"q": q,
+						"r": r,
+						"alive": true
+				}
+				_decay_totems.append(data)
 
-        _alive_decay_totem_count = _decay_totems.size()
-        _run_initial_decay_totems = _alive_decay_totem_count
-        print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
+		_alive_decay_totem_count = _decay_totems.size()
+		_run_initial_decay_totems = _alive_decay_totem_count
+		print("ShroudWorld: initialized %d decay totems" % _alive_decay_totem_count)
 
 func _load_tile_defs() -> void:
-        _tile_defs.clear()
-        _tile_defs_by_id.clear()
+		_tile_defs.clear()
+		_tile_defs_by_id.clear()
 
 	var path := "res://data/tiles.json"
 	if not FileAccess.file_exists(path):
@@ -1010,9 +1010,9 @@ func _load_tile_defs() -> void:
 					continue
 				_tile_defs.append(entry)
 				_tile_defs_by_id[id] = entry
-                print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
-        else:
-                print("ShroudWorld: tiles.json root is not an Array")
+				print("ShroudWorld: loaded %d tile defs" % _tile_defs.size())
+		else:
+				print("ShroudWorld: tiles.json root is not an Array")
 
 func _clamp_selector() -> void:
 	_selector_q = clampi(_selector_q, 0, GRID_WIDTH - 1)
@@ -1041,12 +1041,12 @@ func _update_tile_panel() -> void:
 	_update_tile_info_for_selector()
 
 func _refresh_hud_resources() -> void:
-    if not is_instance_valid(_world_hud):
-        return
-    _world_hud.set_resources(_res_nature, _res_earth, _res_water, _res_souls)
+	if not is_instance_valid(_world_hud):
+		return
+	_world_hud.set_resources(_res_nature, _res_earth, _res_water, _res_souls)
 
 func _update_resource_label() -> void:
-    _refresh_hud_resources()
+	_refresh_hud_resources()
 
 func _generate_resources_for_turn() -> void:
 	var add_nature: int = 0
@@ -1129,128 +1129,128 @@ func _spawn_sprout_from_grove(q: int, r: int) -> void:
 	}
 	_next_sprout_instance_id += 1
 
-        _sprouts.append(sprout)
-        _run_sprouts_spawned += 1
-        print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d)" % [
-                sprout_id,
-                sprout.get("instance_id"),
-                q,
-                r
-        ])
+		_sprouts.append(sprout)
+		_run_sprouts_spawned += 1
+		print("ShroudWorld: spawned sprout %s (instance %d) at (%d, %d)" % [
+				sprout_id,
+				sprout.get("instance_id"),
+				q,
+				r
+		])
 	_update_sprout_registry_view()
 
 func _update_sprout_registry_view() -> void:
-    if not is_instance_valid(_sprout_registry_list):
-        return
+	if not is_instance_valid(_sprout_registry_list):
+		return
 
-    for child in _sprout_registry_list.get_children():
-        child.queue_free()
+	for child in _sprout_registry_list.get_children():
+		child.queue_free()
 
-    if _sprouts.is_empty():
-        _sprout_registry_selected_index = 0
-        var empty_label := Label.new()
-        empty_label.text = "No sprouts yet."
-        _sprout_registry_list.add_child(empty_label)
-        return
+	if _sprouts.is_empty():
+		_sprout_registry_selected_index = 0
+		var empty_label := Label.new()
+		empty_label.text = "No sprouts yet."
+		_sprout_registry_list.add_child(empty_label)
+		return
 
-    _sprout_registry_selected_index = clampi(
-        _sprout_registry_selected_index,
-        0,
-        _sprouts.size() - 1
-    )
+	_sprout_registry_selected_index = clampi(
+		_sprout_registry_selected_index,
+		0,
+		_sprouts.size() - 1
+	)
 
-    for i in range(_sprouts.size()):
-        var sprout := _sprouts[i]
-        var label := Label.new()
-        var sprout_id := str(sprout.get("id", "sprout"))
-        var level := int(sprout.get("level", 1))
-        var max_hp := int(sprout.get("max_hp", 0))
-        var current_hp := int(sprout.get("current_hp", 0))
-        var q := int(sprout.get("q", -1))
-        var r := int(sprout.get("r", -1))
-        var is_dead := bool(sprout.get("dead", false))
+	for i in range(_sprouts.size()):
+		var sprout := _sprouts[i]
+		var label := Label.new()
+		var sprout_id := str(sprout.get("id", "sprout"))
+		var level := int(sprout.get("level", 1))
+		var max_hp := int(sprout.get("max_hp", 0))
+		var current_hp := int(sprout.get("current_hp", 0))
+		var q := int(sprout.get("q", -1))
+		var r := int(sprout.get("r", -1))
+		var is_dead := bool(sprout.get("dead", false))
 
-        var text := "%s (Lv %d) HP %d/%d at (%d, %d)" % [
-            sprout_id,
-            level,
-            current_hp,
-            max_hp,
-            q,
-            r
-        ]
-        if is_dead:
-            text += " [DEAD]"
+		var text := "%s (Lv %d) HP %d/%d at (%d, %d)" % [
+			sprout_id,
+			level,
+			current_hp,
+			max_hp,
+			q,
+			r
+		]
+		if is_dead:
+			text += " [DEAD]"
 
-        if i == _sprout_registry_selected_index:
-            text = "➤ " + text
-        else:
-            text = "   " + text
+		if i == _sprout_registry_selected_index:
+			text = "➤ " + text
+		else:
+			text = "   " + text
 
-        label.text = text
-        _sprout_registry_list.add_child(label)
+		label.text = text
+		_sprout_registry_list.add_child(label)
 
 func _sprout_registry_move_selection(delta: int) -> void:
-    if _sprouts.is_empty():
-        _sprout_registry_selected_index = 0
-        return
+	if _sprouts.is_empty():
+		_sprout_registry_selected_index = 0
+		return
 
-    _sprout_registry_selected_index += delta
-    _sprout_registry_selected_index = clampi(
-        _sprout_registry_selected_index,
-        0,
-        _sprouts.size() - 1
-    )
-    _update_sprout_registry_view()
+	_sprout_registry_selected_index += delta
+	_sprout_registry_selected_index = clampi(
+		_sprout_registry_selected_index,
+		0,
+		_sprouts.size() - 1
+	)
+	_update_sprout_registry_view()
 
 func _get_soul_seed_cost_for_next_level(current_level: int) -> int:
-    if current_level < 1:
-        return SOUL_SEED_COST_BASE
-    return SOUL_SEED_COST_BASE + (current_level - 1) * SOUL_SEED_COST_PER_LEVEL
+	if current_level < 1:
+		return SOUL_SEED_COST_BASE
+	return SOUL_SEED_COST_BASE + (current_level - 1) * SOUL_SEED_COST_PER_LEVEL
 
 func _try_level_selected_sprout_with_soul_seeds() -> void:
-    if _sprouts.is_empty():
-        print("ShroudWorld: no sprouts to level")
-        return
+	if _sprouts.is_empty():
+		print("ShroudWorld: no sprouts to level")
+		return
 
-    _sprout_registry_selected_index = clampi(
-        _sprout_registry_selected_index,
-        0,
-        _sprouts.size() - 1
-    )
+	_sprout_registry_selected_index = clampi(
+		_sprout_registry_selected_index,
+		0,
+		_sprouts.size() - 1
+	)
 
-    var sprout := _sprouts[_sprout_registry_selected_index]
-    var current_level := int(sprout.get("level", 1))
-    var cost := _get_soul_seed_cost_for_next_level(current_level)
+	var sprout := _sprouts[_sprout_registry_selected_index]
+	var current_level := int(sprout.get("level", 1))
+	var cost := _get_soul_seed_cost_for_next_level(current_level)
 
-    if _res_souls < cost:
-        print(
-            "ShroudWorld: not enough Soul Seeds to level sprout (need %d, have %d)" % [
-                cost,
-                _res_souls
-            ]
-        )
-        return
+	if _res_souls < cost:
+		print(
+			"ShroudWorld: not enough Soul Seeds to level sprout (need %d, have %d)" % [
+				cost,
+				_res_souls
+			]
+		)
+		return
 
-    _res_souls -= cost
-    current_level += 1
-    sprout["level"] = current_level
+	_res_souls -= cost
+	current_level += 1
+	sprout["level"] = current_level
 
-    var new_max_hp := 60 + current_level * 10
-    sprout["max_hp"] = new_max_hp
-    sprout["current_hp"] = new_max_hp
-    sprout["dead"] = false
+	var new_max_hp := 60 + current_level * 10
+	sprout["max_hp"] = new_max_hp
+	sprout["current_hp"] = new_max_hp
+	sprout["dead"] = false
 
-    _update_resource_label()
-    _update_sprout_registry_view()
+	_update_resource_label()
+	_update_sprout_registry_view()
 
-    print(
-        "ShroudWorld: leveled sprout %s (instance %d) to level %d for %d Soul Seeds" % [
-            str(sprout.get("id", "sprout")),
-            int(sprout.get("instance_id", -1)),
-            current_level,
-            cost
-        ]
-    )
+	print(
+		"ShroudWorld: leveled sprout %s (instance %d) to level %d for %d Soul Seeds" % [
+			str(sprout.get("id", "sprout")),
+			int(sprout.get("instance_id", -1)),
+			current_level,
+			cost
+		]
+	)
 
 func _regen_sprouts_for_turn() -> void:
 	if _sprouts.is_empty():
@@ -1321,21 +1321,21 @@ func _end_turn() -> void:
 		print("ShroudWorld: must place a tile before ending the turn")
 		return
 
-        _generate_resources_for_turn()
-        _spread_decay_for_turn()
-        if _run_over:
-                return
-        _advance_overgrowth_and_groves()
-        _recompute_clusters()
-        _apply_cluster_threshold_rewards()
-        _regen_sprouts_for_turn()
-        if not _has_any_valid_tile_placements():
-                print("ShroudWorld: no valid tile placements remain – defeat")
-                _trigger_run_defeat("no_valid_placements")
-                return
-        _turn_number += 1
-        print("ShroudWorld: End turn -> Turn %d" % _turn_number)
-        _start_new_turn()
+		_generate_resources_for_turn()
+		_spread_decay_for_turn()
+		if _run_over:
+				return
+		_advance_overgrowth_and_groves()
+		_recompute_clusters()
+		_apply_cluster_threshold_rewards()
+		_regen_sprouts_for_turn()
+		if not _has_any_valid_tile_placements():
+				print("ShroudWorld: no valid tile placements remain – defeat")
+				_trigger_run_defeat("no_valid_placements")
+				return
+		_turn_number += 1
+		print("ShroudWorld: End turn -> Turn %d" % _turn_number)
+		_start_new_turn()
 
 func _place_tile_at_selector() -> void:
 	_clamp_selector()
@@ -1379,176 +1379,176 @@ func _on_back_pressed() -> void:
 	_go_back_to_main_menu()
 
 func _go_back_to_main_menu() -> void:
-    print("ShroudWorld: back to Main Menu")
-    get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
+	print("ShroudWorld: back to Main Menu")
+	get_tree().change_scene_to_file("res://scenes/meta/MainMenu.tscn")
 
 func _start_new_turn() -> void:
-    if _run_over:
-        return
-    if Engine.has_singleton("RunContext"):
-        var ctx := RunContext
-        print(
-            "ShroudWorld: new turn %d (totem=%s, difficulty=%s)" % [
-                _turn_number,
-                str(ctx.selected_totem_id),
-                str(ctx.selected_difficulty)
-            ]
-        )
-    _phase = PHASE_COMMUNE
-    _current_tile_id = ""
-    _current_tile_name = ""
-    _has_placed_this_turn = false
-    _commune_active = false
-    _update_tile_panel()
-    _update_turn_and_phase_labels()
-    _show_commune()
+	if _run_over:
+		return
+	if Engine.has_singleton("RunContext"):
+		var ctx := RunContext
+		print(
+			"ShroudWorld: new turn %d (totem=%s, difficulty=%s)" % [
+				_turn_number,
+				str(ctx.selected_totem_id),
+				str(ctx.selected_difficulty)
+			]
+		)
+	_phase = PHASE_COMMUNE
+	_current_tile_id = ""
+	_current_tile_name = ""
+	_has_placed_this_turn = false
+	_commune_active = false
+	_update_tile_panel()
+	_update_turn_and_phase_labels()
+	_show_commune()
 
 func _show_commune() -> void:
-    if not is_instance_valid(_commune_window):
-        print("ShroudWorld: CommuneWindow not available")
-        _phase = PHASE_PLAYER
-        _commune_active = false
-        _update_turn_and_phase_labels()
-        return
+	if not is_instance_valid(_commune_window):
+		print("ShroudWorld: CommuneWindow not available")
+		_phase = PHASE_PLAYER
+		_commune_active = false
+		_update_turn_and_phase_labels()
+		return
 
-    var offers := _generate_tile_offers()
-    if offers.is_empty():
-        print("ShroudWorld: no unlocked tiles available for Commune offers")
-        _phase = PHASE_PLAYER
-        _commune_active = false
-        _update_turn_and_phase_labels()
-        return
+	var offers := _generate_tile_offers()
+	if offers.is_empty():
+		print("ShroudWorld: no unlocked tiles available for Commune offers")
+		_phase = PHASE_PLAYER
+		_commune_active = false
+		_update_turn_and_phase_labels()
+		return
 
-    _commune_active = true
-    _commune_window.open_with_offers(offers)
-    print("ShroudWorld: Commune open with offers: ", offers)
+	_commune_active = true
+	_commune_window.open_with_offers(offers)
+	print("ShroudWorld: Commune open with offers: ", offers)
 
 func _generate_tile_offers() -> Array:
-    var raw_entries: Array = []
-    if Engine.has_singleton("MetaProgress"):
-        raw_entries = MetaProgress.get_all_tile_entries()
-    else:
-        print("ShroudWorld: MetaProgress not available, cannot build commune offers")
-        return []
+	var raw_entries: Array = []
+	if Engine.has_singleton("MetaProgress"):
+		raw_entries = MetaProgress.get_all_tile_entries()
+	else:
+		print("ShroudWorld: MetaProgress not available, cannot build commune offers")
+		return []
 
-    var unlocked_entries: Array = []
-    for entry in raw_entries:
-        if not (entry is Dictionary):
-            continue
-        if bool(entry.get("unlocked", false)):
-            unlocked_entries.append(entry)
+	var unlocked_entries: Array = []
+	for entry in raw_entries:
+		if not (entry is Dictionary):
+			continue
+		if bool(entry.get("unlocked", false)):
+			unlocked_entries.append(entry)
 
-    if unlocked_entries.is_empty():
-        print("ShroudWorld: no unlocked tiles for commune offers")
-        return []
+	if unlocked_entries.is_empty():
+		print("ShroudWorld: no unlocked tiles for commune offers")
+		return []
 
-    var totem_id := ""
-    var difficulty := "medium"
-    if Engine.has_singleton("RunContext"):
-        var ctx := RunContext
-        totem_id = str(ctx.selected_totem_id)
-        difficulty = str(ctx.selected_difficulty)
-        if difficulty.is_empty():
-            difficulty = "medium"
-    else:
-        print("ShroudWorld: RunContext not available when generating commune offers")
+	var totem_id := ""
+	var difficulty := "medium"
+	if Engine.has_singleton("RunContext"):
+		var ctx := RunContext
+		totem_id = str(ctx.selected_totem_id)
+		difficulty = str(ctx.selected_difficulty)
+		if difficulty.is_empty():
+			difficulty = "medium"
+	else:
+		print("ShroudWorld: RunContext not available when generating commune offers")
 
-    if Engine.has_singleton("CommuneManager"):
-        var offers := CommuneManager.generate_offers(
-            _tile_defs_by_id,
-            unlocked_entries,
-            totem_id,
-            difficulty,
-            3
-        )
-        if not offers.is_empty():
-            print(
-                "ShroudWorld: generated weighted commune offers (totem=%s, difficulty=%s)" % [
-                    totem_id,
-                    difficulty
-                ]
-            )
-            return offers
-        else:
-            print("ShroudWorld: CommuneManager returned no offers, falling back to random")
-    else:
-        print("ShroudWorld: CommuneManager singleton not available, using fallback commune offers")
+	if Engine.has_singleton("CommuneManager"):
+		var offers := CommuneManager.generate_offers(
+			_tile_defs_by_id,
+			unlocked_entries,
+			totem_id,
+			difficulty,
+			3
+		)
+		if not offers.is_empty():
+			print(
+				"ShroudWorld: generated weighted commune offers (totem=%s, difficulty=%s)" % [
+					totem_id,
+					difficulty
+				]
+			)
+			return offers
+		else:
+			print("ShroudWorld: CommuneManager returned no offers, falling back to random")
+	else:
+		print("ShroudWorld: CommuneManager singleton not available, using fallback commune offers")
 
-    var fallback_offers: Array = []
-    var pool := unlocked_entries.duplicate()
-    var max_offers := 3
-    for i in range(max_offers):
-        if pool.is_empty():
-            break
-        var idx := randi_range(0, pool.size() - 1)
-        var entry := pool[idx]
-        pool.remove_at(idx)
+	var fallback_offers: Array = []
+	var pool := unlocked_entries.duplicate()
+	var max_offers := 3
+	for i in range(max_offers):
+		if pool.is_empty():
+			break
+		var idx := randi_range(0, pool.size() - 1)
+		var entry := pool[idx]
+		pool.remove_at(idx)
 
-        if not (entry is Dictionary):
-            continue
-        var tile_id := str(entry.get("id", ""))
-        if tile_id.is_empty():
-            continue
-        var name := tile_id
-        var category := ""
-        var description := ""
-        if _tile_defs_by_id.has(tile_id):
-            var def := _tile_defs_by_id[tile_id]
-            name = str(def.get("name", name))
-            category = str(def.get("category", ""))
-            description = str(def.get("description", ""))
+		if not (entry is Dictionary):
+			continue
+		var tile_id := str(entry.get("id", ""))
+		if tile_id.is_empty():
+			continue
+		var name := tile_id
+		var category := ""
+		var description := ""
+		if _tile_defs_by_id.has(tile_id):
+			var def := _tile_defs_by_id[tile_id]
+			name = str(def.get("name", name))
+			category = str(def.get("category", ""))
+			description = str(def.get("description", ""))
 
-        fallback_offers.append({
-            "id": tile_id,
-            "name": name,
-            "category": category,
-            "description": description
-        })
+		fallback_offers.append({
+			"id": tile_id,
+			"name": name,
+			"category": category,
+			"description": description
+		})
 
-    return fallback_offers
+	return fallback_offers
 
 func _on_commune_offer_chosen(tile_id: String) -> void:
-    var chosen_id := str(tile_id)
-    if chosen_id.is_empty():
-        return
+	var chosen_id := str(tile_id)
+	if chosen_id.is_empty():
+		return
 
-    _current_tile_id = chosen_id
-    _current_tile_name = chosen_id
-    if _tile_defs_by_id.has(chosen_id):
-        var def := _tile_defs_by_id[chosen_id]
-        _current_tile_name = str(def.get("name", chosen_id))
+	_current_tile_id = chosen_id
+	_current_tile_name = chosen_id
+	if _tile_defs_by_id.has(chosen_id):
+		var def := _tile_defs_by_id[chosen_id]
+		_current_tile_name = str(def.get("name", chosen_id))
 
-    _phase = PHASE_PLAYER
-    _commune_active = false
-    if is_instance_valid(_commune_window):
-        _commune_window.close_commune()
-    _update_tile_panel()
-    _update_turn_and_phase_labels()
-    print("ShroudWorld: selected tile %s" % _current_tile_id)
+	_phase = PHASE_PLAYER
+	_commune_active = false
+	if is_instance_valid(_commune_window):
+		_commune_window.close_commune()
+	_update_tile_panel()
+	_update_turn_and_phase_labels()
+	print("ShroudWorld: selected tile %s" % _current_tile_id)
 
 func _get_neighbors(q: int, r: int) -> Array[Vector2i]:
-        var neighbors: Array[Vector2i] = []
-        var dirs := [
-                Vector2i(-1, 0),
-                Vector2i(1, 0),
-                Vector2i(0, -1),
-                Vector2i(0, 1)
-        ]
-        for d in dirs:
-                var nq := q + d.x
-                var nr := r + d.y
-                if nq >= 0 and nq < GRID_WIDTH and nr >= 0 and nr < GRID_HEIGHT:
-                        neighbors.append(Vector2i(nq, nr))
-        return neighbors
+		var neighbors: Array[Vector2i] = []
+		var dirs := [
+				Vector2i(-1, 0),
+				Vector2i(1, 0),
+				Vector2i(0, -1),
+				Vector2i(0, 1)
+		]
+		for d in dirs:
+				var nq := q + d.x
+				var nr := r + d.y
+				if nq >= 0 and nq < GRID_WIDTH and nr >= 0 and nr < GRID_HEIGHT:
+						neighbors.append(Vector2i(nq, nr))
+		return neighbors
 
 func _get_decay_totem_index_at(q: int, r: int) -> int:
-        for i in _decay_totems.size():
-                var data := _decay_totems[i]
-                if not bool(data.get("alive", true)):
-                        continue
-                if int(data.get("q", -1)) == q and int(data.get("r", -1)) == r:
-                        return i
-        return -1
+		for i in _decay_totems.size():
+				var data := _decay_totems[i]
+				if not bool(data.get("alive", true)):
+						continue
+				if int(data.get("q", -1)) == q and int(data.get("r", -1)) == r:
+						return i
+		return -1
 
 func _spread_decay_for_turn() -> void:
 	var new_decay_positions: Array[Vector2i] = []
@@ -1587,15 +1587,15 @@ func _spread_decay_for_turn() -> void:
 				_tiles[r][q] = ""
 				_overgrowth_age[r][q] = 0
 
-        if not new_decay_positions.is_empty():
-                print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
-        else:
-                print("ShroudWorld: decay did not spread this turn")
+		if not new_decay_positions.is_empty():
+				print("ShroudWorld: decay spread to %d new cells this turn" % new_decay_positions.size())
+		else:
+				print("ShroudWorld: decay did not spread this turn")
 
-        _check_player_totem_for_decay()
+		_check_player_totem_for_decay()
 
-        if is_instance_valid(_hex_grid):
-                _hex_grid.update()
+		if is_instance_valid(_hex_grid):
+				_hex_grid.update()
 
 func get_tile_id_at(q: int, r: int) -> String:
 	if r < 0 or r >= _tiles.size():
@@ -1606,53 +1606,53 @@ func get_tile_id_at(q: int, r: int) -> String:
 	return str(row[q])
 
 func is_decay_at(q: int, r: int) -> bool:
-        if r < 0 or r >= _decay_grid.size():
-                return false
-        var row: Array = _decay_grid[r]
-        if q < 0 or q >= row.size():
-                return false
-        return bool(row[q])
+		if r < 0 or r >= _decay_grid.size():
+				return false
+		var row: Array = _decay_grid[r]
+		if q < 0 or q >= row.size():
+				return false
+		return bool(row[q])
 
 func _check_player_totem_for_decay() -> void:
-        if _player_totem_q < 0 or _player_totem_r < 0:
-                return
-        if _player_totem_r < 0 or _player_totem_r >= GRID_HEIGHT:
-                return
-        if _player_totem_q < 0 or _player_totem_q >= GRID_WIDTH:
-                return
+		if _player_totem_q < 0 or _player_totem_r < 0:
+				return
+		if _player_totem_r < 0 or _player_totem_r >= GRID_HEIGHT:
+				return
+		if _player_totem_q < 0 or _player_totem_q >= GRID_WIDTH:
+				return
 
-        if _decay_grid[_player_totem_r][_player_totem_q]:
-                print("ShroudWorld: player Totem consumed by Decay at (%d, %d)" % [
-                        _player_totem_q,
-                        _player_totem_r
-                ])
-                _trigger_run_defeat("totem_consumed")
+		if _decay_grid[_player_totem_r][_player_totem_q]:
+				print("ShroudWorld: player Totem consumed by Decay at (%d, %d)" % [
+						_player_totem_q,
+						_player_totem_r
+				])
+				_trigger_run_defeat("totem_consumed")
 
 func _has_any_valid_tile_placements() -> bool:
-        for r in GRID_HEIGHT:
-                for q in GRID_WIDTH:
-                        if _tiles[r][q] != "":
-                                continue
-                        if _decay_grid[r][q]:
-                                continue
+		for r in GRID_HEIGHT:
+				for q in GRID_WIDTH:
+						if _tiles[r][q] != "":
+								continue
+						if _decay_grid[r][q]:
+								continue
 
-                        var neighbors := [
-                                Vector2i(q - 1, r),
-                                Vector2i(q + 1, r),
-                                Vector2i(q, r - 1),
-                                Vector2i(q, r + 1)
-                        ]
-                        for v in neighbors:
-                                var nq := v.x
-                                var nr := v.y
-                                if nq < 0 or nq >= GRID_WIDTH or nr < 0 or nr >= GRID_HEIGHT:
-                                        continue
-                                if _decay_grid[nr][nq]:
-                                        continue
-                                if _tiles[nr][nq] != "":
-                                        return true
+						var neighbors := [
+								Vector2i(q - 1, r),
+								Vector2i(q + 1, r),
+								Vector2i(q, r - 1),
+								Vector2i(q, r + 1)
+						]
+						for v in neighbors:
+								var nq := v.x
+								var nr := v.y
+								if nq < 0 or nq >= GRID_WIDTH or nr < 0 or nr >= GRID_HEIGHT:
+										continue
+								if _decay_grid[nr][nq]:
+										continue
+								if _tiles[nr][nq] != "":
+										return true
 
-        return false
+		return false
 
 func _build_player_battle_team_from_sprouts() -> Array:
 	var team: Array = []
@@ -1684,67 +1684,67 @@ func _build_player_battle_team_from_sprouts() -> Array:
 	return team
 
 func _build_enemy_battle_team(mode: String, q: int, r: int) -> Array:
-        var difficulty_key := _get_current_difficulty_key()
+		var difficulty_key := _get_current_difficulty_key()
 
-        var type_key := "normal"
-        if mode == "decay_totem":
-                type_key = "totem"
+		var type_key := "normal"
+		if mode == "decay_totem":
+				type_key = "totem"
 
-        if mode == "debug":
-                type_key = "normal"
+		if mode == "debug":
+				type_key = "normal"
 
-        var diff_config := ENEMY_CONFIG.get(difficulty_key, null)
-        if diff_config == null:
-                diff_config = ENEMY_CONFIG["easy"]
+		var diff_config := ENEMY_CONFIG.get(difficulty_key, null)
+		if diff_config == null:
+				diff_config = ENEMY_CONFIG["easy"]
 
-        var type_config := diff_config.get(type_key, null)
-        if type_config == null:
-                type_config = diff_config["normal"]
+		var type_config := diff_config.get(type_key, null)
+		if type_config == null:
+				type_config = diff_config["normal"]
 
-        var min_units := int(type_config.get("min_units", 3))
-        var max_units := int(type_config.get("max_units", 3))
-        var hp_min := int(type_config.get("hp_min", 50))
-        var hp_max := int(type_config.get("hp_max", 80))
-        var attack_min := int(type_config.get("attack_min", 8))
-        var attack_max := int(type_config.get("attack_max", 12))
-        var cooldown_min := float(type_config.get("cooldown_min", 3.0))
-        var cooldown_max := float(type_config.get("cooldown_max", 4.0))
+		var min_units := int(type_config.get("min_units", 3))
+		var max_units := int(type_config.get("max_units", 3))
+		var hp_min := int(type_config.get("hp_min", 50))
+		var hp_max := int(type_config.get("hp_max", 80))
+		var attack_min := int(type_config.get("attack_min", 8))
+		var attack_max := int(type_config.get("attack_max", 12))
+		var cooldown_min := float(type_config.get("cooldown_min", 3.0))
+		var cooldown_max := float(type_config.get("cooldown_max", 4.0))
 
-        var unit_count := randi_range(min_units, max_units)
+		var unit_count := randi_range(min_units, max_units)
 
-        var team: Array = []
-        for i in unit_count:
-                var hp := randi_range(hp_min, hp_max)
-                var attack := randi_range(attack_min, attack_max)
-                var cooldown := randf_range(cooldown_min, cooldown_max)
+		var team: Array = []
+		for i in unit_count:
+				var hp := randi_range(hp_min, hp_max)
+				var attack := randi_range(attack_min, attack_max)
+				var cooldown := randf_range(cooldown_min, cooldown_max)
 
-                var unit := {
-                        "instance_id": -1,
-                        "name": "",
-                        "max_hp": hp,
-                        "hp": hp,
-                        "attack": attack,
-                        "cooldown": cooldown,
-                        "cooldown_remaining": randf_range(0.0, cooldown),
-                        "is_player": false
-                }
+				var unit := {
+						"instance_id": -1,
+						"name": "",
+						"max_hp": hp,
+						"hp": hp,
+						"attack": attack,
+						"cooldown": cooldown,
+						"cooldown_remaining": randf_range(0.0, cooldown),
+						"is_player": false
+				}
 
-                if mode == "decay_totem":
-                        unit["name"] = "Totem Smog_%d" % i
-                elif mode == "decay_normal":
-                        unit["name"] = "Decay Smog_%d" % i
-                else:
-                        unit["name"] = "Smog_%d" % i
+				if mode == "decay_totem":
+						unit["name"] = "Totem Smog_%d" % i
+				elif mode == "decay_normal":
+						unit["name"] = "Decay Smog_%d" % i
+				else:
+						unit["name"] = "Smog_%d" % i
 
-                team.append(unit)
+				team.append(unit)
 
-        print("ShroudWorld: built enemy team (mode=%s, difficulty=%s, count=%d)" % [
-                mode,
-                difficulty_key,
-                team.size()
-        ])
+		print("ShroudWorld: built enemy team (mode=%s, difficulty=%s, count=%d)" % [
+				mode,
+				difficulty_key,
+				team.size()
+		])
 
-        return team
+		return team
 
 func _can_attack_decay_at(q: int, r: int) -> bool:
 	if r < 0 or r >= GRID_HEIGHT or q < 0 or q >= GRID_WIDTH:
@@ -1780,19 +1780,19 @@ func _start_decay_attack_battle(q: int, r: int) -> void:
 		print("ShroudWorld: battle overlay layer is not set")
 		return
 
-        if not _can_attack_decay_at(q, r):
-                print("ShroudWorld: cannot attack decay at (%d, %d)" % [q, r])
-                return
+		if not _can_attack_decay_at(q, r):
+				print("ShroudWorld: cannot attack decay at (%d, %d)" % [q, r])
+				return
 
-        var totem_index := _get_decay_totem_index_at(q, r)
-        if totem_index != -1:
-                print("ShroudWorld: starting decay attack battle vs Decay Totem at (%d, %d)" % [q, r])
-        else:
-                print("ShroudWorld: starting decay attack battle vs normal decay at (%d, %d)" % [q, r])
+		var totem_index := _get_decay_totem_index_at(q, r)
+		if totem_index != -1:
+				print("ShroudWorld: starting decay attack battle vs Decay Totem at (%d, %d)" % [q, r])
+		else:
+				print("ShroudWorld: starting decay attack battle vs normal decay at (%d, %d)" % [q, r])
 
-        if not Engine.has_singleton("BattleContext"):
-                print("ShroudWorld: cannot start decay battle, BattleContext singleton not found")
-                return
+		if not Engine.has_singleton("BattleContext"):
+				print("ShroudWorld: cannot start decay battle, BattleContext singleton not found")
+				return
 
 	var ctx := BattleContext
 	ctx.reset()
@@ -1807,11 +1807,11 @@ func _start_decay_attack_battle(q: int, r: int) -> void:
 		print("ShroudWorld: no living sprouts available to fight")
 		return
 
-        var enemy_mode := "decay_normal"
-        if totem_index != -1:
-                enemy_mode = "decay_totem"
+		var enemy_mode := "decay_normal"
+		if totem_index != -1:
+				enemy_mode = "decay_totem"
 
-        var enemy_team := _build_enemy_battle_team(enemy_mode, q, r)
+		var enemy_team := _build_enemy_battle_team(enemy_mode, q, r)
 
 	ctx.player_team = player_team
 	ctx.enemy_team = enemy_team
@@ -1859,14 +1859,14 @@ func _start_debug_battle() -> void:
 	var ctx := BattleContext
 	ctx.reset()
 
-        var player_team := _build_player_battle_team_from_sprouts()
-        if player_team.is_empty():
-                print("ShroudWorld: no sprouts available, using dummy player team")
-                player_team = _build_enemy_battle_team("debug", -1, -1)
-                for unit in player_team:
-                        unit["is_player"] = true
+		var player_team := _build_player_battle_team_from_sprouts()
+		if player_team.is_empty():
+				print("ShroudWorld: no sprouts available, using dummy player team")
+				player_team = _build_enemy_battle_team("debug", -1, -1)
+				for unit in player_team:
+						unit["is_player"] = true
 
-        var enemy_team := _build_enemy_battle_team("debug", -1, -1)
+		var enemy_team := _build_enemy_battle_team("debug", -1, -1)
 
 	ctx.player_team = player_team
 	ctx.enemy_team = enemy_team
@@ -1915,18 +1915,18 @@ func _on_battle_finished(result: String, player_team: Array, enemy_team: Array) 
 		if instance_id < 0:
 			continue
 
-                for sprout in _sprouts:
-                        if int(sprout.get("instance_id", -1)) == instance_id:
-                                var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
-                                var was_dead_before := bool(sprout.get("dead", false))
-                                sprout["current_hp"] = new_hp
-                                if new_hp <= 0:
-                                        sprout["dead"] = true
-                                        if not was_dead_before:
-                                                _run_sprouts_fallen += 1
-                                else:
-                                        sprout["dead"] = false
-                                break
+				for sprout in _sprouts:
+						if int(sprout.get("instance_id", -1)) == instance_id:
+								var new_hp := int(unit.get("hp", sprout.get("current_hp", 0)))
+								var was_dead_before := bool(sprout.get("dead", false))
+								sprout["current_hp"] = new_hp
+								if new_hp <= 0:
+										sprout["dead"] = true
+										if not was_dead_before:
+												_run_sprouts_fallen += 1
+								else:
+										sprout["dead"] = false
+								break
 
 	_update_sprout_registry_view()
 
@@ -1953,31 +1953,31 @@ func _apply_decay_attack_result(result: String) -> void:
 		print("ShroudWorld: no valid decay target stored for battle result")
 		return
 
-        if result == "victory":
-                if _decay_grid[r][q]:
-                        _decay_grid[r][q] = false
-                        _decay_count = max(_decay_count - 1, 0)
-                        print("ShroudWorld: cleansed decay at (%d, %d) after victory" % [q, r])
+		if result == "victory":
+				if _decay_grid[r][q]:
+						_decay_grid[r][q] = false
+						_decay_count = max(_decay_count - 1, 0)
+						print("ShroudWorld: cleansed decay at (%d, %d) after victory" % [q, r])
 
-                var totem_index := _get_decay_totem_index_at(q, r)
-                if totem_index != -1:
-                        var totem := _decay_totems[totem_index]
-                        if bool(totem.get("alive", true)):
-                                totem["alive"] = false
-                                _decay_totems[totem_index] = totem
-                                _alive_decay_totem_count -= 1
-                                print("ShroudWorld: destroyed Decay Totem at (%d, %d). Remaining = %d" % [
-                                        q,
-                                        r,
-                                        _alive_decay_totem_count
-                                ])
-                                if _alive_decay_totem_count <= 0:
-                                        _trigger_run_victory()
-        elif result == "defeat":
-                var neighbors := [
-                        Vector2i(q - 1, r),
-                        Vector2i(q + 1, r),
-                        Vector2i(q, r - 1),
+				var totem_index := _get_decay_totem_index_at(q, r)
+				if totem_index != -1:
+						var totem := _decay_totems[totem_index]
+						if bool(totem.get("alive", true)):
+								totem["alive"] = false
+								_decay_totems[totem_index] = totem
+								_alive_decay_totem_count -= 1
+								print("ShroudWorld: destroyed Decay Totem at (%d, %d). Remaining = %d" % [
+										q,
+										r,
+										_alive_decay_totem_count
+								])
+								if _alive_decay_totem_count <= 0:
+										_trigger_run_victory()
+		elif result == "defeat":
+				var neighbors := [
+						Vector2i(q - 1, r),
+						Vector2i(q + 1, r),
+						Vector2i(q, r - 1),
 			Vector2i(q, r + 1)
 		]
 		var candidates: Array = []
@@ -1998,11 +1998,11 @@ func _apply_decay_attack_result(result: String) -> void:
 			print("ShroudWorld: decay spreads to Life tile at (%d, %d) after defeat" % [cq, cr])
 			_tiles[cr][cq] = ""
 			_overgrowth_age[cr][cq] = 0
-                        if not _decay_grid[cr][cq]:
-                                _decay_grid[cr][cq] = true
-                                _decay_count += 1
+						if not _decay_grid[cr][cq]:
+								_decay_grid[cr][cq] = true
+								_decay_count += 1
 
-        _check_player_totem_for_decay()
+		_check_player_totem_for_decay()
 
-        if is_instance_valid(_hex_grid):
-                _hex_grid.update()
+		if is_instance_valid(_hex_grid):
+				_hex_grid.update()
