@@ -1,41 +1,41 @@
 [
-    {
-        "id": "sprout.grumbler",
-        "name": "Grumbler",
-        "archetype": "tank",
-        "base_stats": {"hp": 100, "attack": 10, "speed": 1.0},
-        "growth_per_level": {"mult": 1.05},
-        "level_cap": 99,
-        "level_costs": {"nature": 4, "water": 2},
-        "attack_id": "atk.slam",
-        "passive_ids": ["pas.stone_skin"],
-        "equip_slots": 1,
-        "permadeath": true
-    },
-    {
-        "id": "sprout.amber_knight",
-        "name": "Amber Knight",
-        "archetype": "bruiser",
-        "base_stats": {"hp": 80, "attack": 14, "speed": 1.0},
-        "growth_per_level": {"mult": 1.05},
-        "level_cap": 99,
-        "level_costs": {"nature": 3, "earth": 3},
-        "attack_id": "atk.pierce",
-        "passive_ids": ["pas.regen_small"],
-        "equip_slots": 1,
-        "permadeath": true
-    },
-    {
-        "id": "sprout.moss_golem",
-        "name": "Moss Golem",
-        "archetype": "support",
-        "base_stats": {"hp": 70, "attack": 8, "speed": 1.0},
-        "growth_per_level": {"mult": 1.05},
-        "level_cap": 99,
-        "level_costs": {"nature": 4, "earth": 2},
-        "attack_id": "atk.slam",
-        "passive_ids": ["pas.regen_small"],
-        "equip_slots": 1,
-        "permadeath": true
-    }
+  {
+	"id": "sprout.grumbler",
+	"name": "Grumbler",
+	"archetype": "tank",
+	"base_stats": {"hp": 100, "attack": 10, "speed": 1.0},
+	"growth_per_level": {"mult": 1.05},
+	"level_cap": 99,
+	"level_costs": {"nature": 4, "water": 2},
+	"attack_id": "atk.slam",
+	"passive_ids": ["pas.stone_skin"],
+	"equip_slots": 1,
+	"permadeath": true
+  },
+  {
+	"id": "sprout.amber_knight",
+	"name": "Amber Knight",
+	"archetype": "bruiser",
+	"base_stats": {"hp": 80, "attack": 14, "speed": 1.0},
+	"growth_per_level": {"mult": 1.05},
+	"level_cap": 99,
+	"level_costs": {"nature": 3, "earth": 3},
+	"attack_id": "atk.pierce",
+	"passive_ids": ["pas.regen_small"],
+	"equip_slots": 1,
+	"permadeath": true
+  },
+  {
+	"id": "sprout.moss_golem",
+	"name": "Moss Golem",
+	"archetype": "support",
+	"base_stats": {"hp": 70, "attack": 8, "speed": 1.0},
+	"growth_per_level": {"mult": 1.05},
+	"level_cap": 99,
+	"level_costs": {"nature": 4, "earth": 2},
+	"attack_id": "atk.slam",
+	"passive_ids": ["pas.regen_small"],
+	"equip_slots": 1,
+	"permadeath": true
+  }
 ]
