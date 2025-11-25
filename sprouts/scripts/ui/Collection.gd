@@ -62,14 +62,42 @@ func _refresh_tab_visuals() -> void:
             button.grab_focus()
 
 func _get_current_tab_data() -> Array:
-    if not Engine.has_singleton("MetaProgress"):
-        return []
-    var meta := MetaProgress
-    if _current_tab_index == TAB_TOTEMS:
-        return meta.get_all_totem_entries()
-    if _current_tab_index == TAB_SPROUTS:
-        return meta.get_all_sprout_entries()
-    return meta.get_all_tile_entries()
+    var entries: Array = []
+
+    if Engine.has_singleton("MetaProgress"):
+        var meta := MetaProgress
+        if _current_tab_index == TAB_TOTEMS:
+            entries = meta.get_all_totem_entries()
+        elif _current_tab_index == TAB_SPROUTS:
+            entries = meta.get_all_sprout_entries()
+        else:
+            entries = meta.get_all_tile_entries()
+
+    if entries.is_empty() and Engine.has_singleton("DataDB"):
+        var db := DataDB
+        if _current_tab_index == TAB_TOTEMS:
+            entries = _build_entries_from_defs(db.totem_defs.values())
+        elif _current_tab_index == TAB_SPROUTS:
+            entries = _build_entries_from_defs(db.sprout_defs.values())
+        else:
+            entries = _build_entries_from_defs(db.tile_defs.values())
+
+    return entries
+
+func _build_entries_from_defs(defs: Array) -> Array:
+    var arr: Array = []
+    for def in defs:
+        if not (def is Dictionary):
+            continue
+        var id := str(def.get("id", ""))
+        if id == "":
+            continue
+        arr.append({
+            "id": id,
+            "name": str(def.get("name", id)),
+            "unlocked": false,
+        })
+    return arr
 
 func _clear_cards() -> void:
     for child in _card_grid.get_children():
