@@ -135,46 +135,58 @@ func generate_offers(
 ) -> Array:
 	var candidates: Array[Dictionary] = []
 	var weights: Array[float] = []
+
 	for entry in unlocked_tile_entries:
 		if not (entry is Dictionary):
 			continue
 		if not bool(entry.get("unlocked", false)):
 			continue
-		var tile_id: String = str(entry.get("id", ""))
+
+		var tile_id: String = String(entry.get("id", ""))
 		if tile_id.is_empty():
 			continue
 		if not tile_defs.has(tile_id):
 			continue
+
 		var def: Dictionary = tile_defs[tile_id]
 		var weight: float = _compute_tile_weight(def, totem_id, difficulty)
 		if weight <= 0.0:
 			continue
+
 		candidates.append(entry)
 		weights.append(weight)
+
 	if candidates.is_empty():
 		print("CommuneManager: no candidates for offers")
 		return []
+
 	var indices: Array[int] = _weighted_pick_indices(weights, offer_count)
 	var offers: Array = []
+
 	for idx in indices:
 		if idx < 0 or idx >= candidates.size():
 			continue
-                var entry: Dictionary = candidates[idx]
-                var tile_id: String = str(entry.get("id", ""))
-                if tile_id.is_empty():
-                        continue
-                var tile_name: String = str(entry.get("name", tile_id))
-                var category: String = ""
-                var description: String = ""
-                if tile_defs.has(tile_id):
-                        var def: Dictionary = tile_defs[tile_id]
-                        tile_name = str(def.get("name", tile_name))
-                        category = str(def.get("category", ""))
-                        description = str(def.get("description", ""))
-                offers.append({
-                        "id": tile_id,
-                        "name": tile_name,
-                        "category": category,
-                        "description": description
-                })
-        return offers
+
+		var entry: Dictionary = candidates[idx]
+		var tile_id: String = String(entry.get("id", ""))
+		if tile_id.is_empty():
+			continue
+
+		var tile_name: String = String(entry.get("name", tile_id))
+		var category: String = ""
+		var description: String = ""
+
+		if tile_defs.has(tile_id):
+			var def: Dictionary = tile_defs[tile_id]
+			tile_name = String(def.get("name", tile_name))
+			category = String(def.get("category", ""))
+			description = String(def.get("description", ""))
+
+		offers.append({
+			"id": tile_id,
+			"name": tile_name,
+			"category": category,
+			"description": description,
+		})
+
+	return offers
