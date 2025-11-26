@@ -52,11 +52,11 @@ func get_all_totem_entries() -> Array:
     var arr: Array = []
     for def in all_totem_defs:
         var id := str(def.get("id", ""))
-        var name := str(def.get("name", id))
+        var entry_name := str(def.get("name", id))
         var unlocked := bool(unlocked_totems.get(id, false))
         arr.append({
             "id": id,
-            "name": name,
+            "name": entry_name,
             "unlocked": unlocked
         })
     return arr
@@ -65,11 +65,11 @@ func get_all_sprout_entries() -> Array:
     var arr: Array = []
     for def in all_sprout_defs:
         var id := str(def.get("id", ""))
-        var name := str(def.get("name", id))
+        var entry_name := str(def.get("name", id))
         var unlocked := bool(unlocked_sprouts.get(id, false))
         arr.append({
             "id": id,
-            "name": name,
+            "name": entry_name,
             "unlocked": unlocked
         })
     return arr
@@ -78,11 +78,11 @@ func get_all_tile_entries() -> Array:
     var arr: Array = []
     for def in all_tile_defs:
         var id := str(def.get("id", ""))
-        var name := str(def.get("name", id))
+        var entry_name := str(def.get("name", id))
         var unlocked := bool(unlocked_tiles.get(id, false))
         arr.append({
             "id": id,
-            "name": name,
+            "name": entry_name,
             "unlocked": unlocked
         })
     return arr

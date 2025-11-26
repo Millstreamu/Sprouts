@@ -159,22 +159,22 @@ func generate_offers(
 	for idx in indices:
 		if idx < 0 or idx >= candidates.size():
 			continue
-		var entry: Dictionary = candidates[idx]
-		var tile_id: String = str(entry.get("id", ""))
-		if tile_id.is_empty():
-			continue
-		var name: String = str(entry.get("name", tile_id))
-		var category: String = ""
-		var description: String = ""
-		if tile_defs.has(tile_id):
-			var def: Dictionary = tile_defs[tile_id]
-			name = str(def.get("name", name))
-			category = str(def.get("category", ""))
-			description = str(def.get("description", ""))
-		offers.append({
-			"id": tile_id,
-			"name": name,
-			"category": category,
-			"description": description
-		})
-	return offers
+                var entry: Dictionary = candidates[idx]
+                var tile_id: String = str(entry.get("id", ""))
+                if tile_id.is_empty():
+                        continue
+                var tile_name: String = str(entry.get("name", tile_id))
+                var category: String = ""
+                var description: String = ""
+                if tile_defs.has(tile_id):
+                        var def: Dictionary = tile_defs[tile_id]
+                        tile_name = str(def.get("name", tile_name))
+                        category = str(def.get("category", ""))
+                        description = str(def.get("description", ""))
+                offers.append({
+                        "id": tile_id,
+                        "name": tile_name,
+                        "category": category,
+                        "description": description
+                })
+        return offers
