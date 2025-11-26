@@ -35,19 +35,25 @@ func _ready() -> void:
 	])
 
 func _init_defaults() -> void:
-	unlocked_totems.clear()
-	unlocked_sprouts.clear()
-	unlocked_tiles.clear()
+        unlocked_totems.clear()
+        unlocked_sprouts.clear()
+        unlocked_tiles.clear()
 
-	unlocked_totems["totem.heartseed"] = true
+        for def in all_totem_defs:
+                var id := str(def.get("id", ""))
+                if not id.is_empty():
+                        unlocked_totems[id] = true
 
-	unlocked_sprouts["sprout.grumbler"] = true
-	unlocked_sprouts["sprout.amber_knight"] = true
+        for def in all_sprout_defs:
+                var id := str(def.get("id", ""))
+                if not id.is_empty():
+                        unlocked_sprouts[id] = true
 
-	unlocked_tiles["tile.nature.whispering_pine_forest"] = true
-	unlocked_tiles["tile.water.mirror_pool"] = true
-	unlocked_tiles["tile.earth.stone_vein"] = true
-	print("MetaProgress: unlocked_totems =", unlocked_totems)
+        for def in all_tile_defs:
+                var id := str(def.get("id", ""))
+                if not id.is_empty():
+                        unlocked_tiles[id] = true
+        print("MetaProgress: unlocked_totems =", unlocked_totems)
 
 func get_all_totem_entries() -> Array:
 	var arr: Array = []
