@@ -72,29 +72,27 @@ func _get_meta_progress() -> MetaProgress:
     return meta
 
 func _get_current_tab_data() -> Array:
-    var entries: Array = []
+    if not Engine.has_singleton("MetaProgress"):
+        print("Collection: MetaProgress not available, returning empty data")
+        return []
 
-    var meta := _get_meta_progress()
-    if meta != null:
-        if _current_tab_index == TAB_TOTEMS:
-            entries = meta.get_all_totem_entries()
-        elif _current_tab_index == TAB_SPROUTS:
-            entries = meta.get_all_sprout_entries()
-        else:
-            entries = meta.get_all_tile_entries()
-        print("Collection: loaded %d entries from MetaProgress for tab %d" % [entries.size(), _current_tab_index])
+    var meta := MetaProgress
 
-    if entries.is_empty() and Engine.has_singleton("DataDB"):
-        var db := DataDB
-        if _current_tab_index == TAB_TOTEMS:
-            entries = _build_entries_from_defs(db.totem_defs.values())
-        elif _current_tab_index == TAB_SPROUTS:
-            entries = _build_entries_from_defs(db.sprout_defs.values())
-        else:
-            entries = _build_entries_from_defs(db.tile_defs.values())
-        print("Collection: loaded %d fallback entries from DataDB for tab %d" % [entries.size(), _current_tab_index])
-
-    return entries
+    match _current_tab_index:
+        TAB_TOTEMS:
+            var totem_data := meta.get_all_totem_entries()
+            print("Collection: using %d totem entries" % totem_data.size())
+            return totem_data
+        TAB_SPROUTS:
+            var sprout_data := meta.get_all_sprout_entries()
+            print("Collection: using %d sprout entries" % sprout_data.size())
+            return sprout_data
+        TAB_TILES:
+            var tile_data := meta.get_all_tile_entries()
+            print("Collection: using %d tile entries" % tile_data.size())
+            return tile_data
+        _:
+            return []
 
 func _build_entries_from_defs(defs: Array) -> Array:
     var arr: Array = []
@@ -123,8 +121,7 @@ func _populate_cards_for_current_tab() -> void:
         print("Collection: card_scene is NULL, no cards will be created")
         return
     var data: Array = _get_current_tab_data()
-    print("Collection: data size for tab", _current_tab_index, "=", data.size())
-    print("Collection: cards populated = %d" % data.size())
+    print("Collection: data size for tab%d=%d" % [_current_tab_index, data.size()])
     for entry in data:
         var card := card_scene.instantiate() as Control
         _card_grid.add_child(card)
@@ -136,7 +133,8 @@ func _populate_cards_for_current_tab() -> void:
             else:
                 label.text = "Locked"
         card.set_meta("card_id", entry.get("id", ""))
-    print("Collection: grid child count =", _card_grid.get_child_count())
+    print("Collection: cards populated = %d" % _cards.size())
+    print("Collection: grid child count = %d" % _card_grid.get_child_count())
     _update_card_selection()
 
 func _update_card_selection() -> void:
