@@ -61,17 +61,28 @@ func _refresh_tab_visuals() -> void:
         if _in_tab_mode and i == _current_tab_index:
             button.grab_focus()
 
+func _get_meta_progress() -> MetaProgress:
+    var meta: MetaProgress = null
+    if Engine.has_singleton("MetaProgress"):
+        meta = MetaProgress
+    else:
+        meta = get_node_or_null("/root/MetaProgress") as MetaProgress
+    if meta == null:
+        print("Collection: MetaProgress not available")
+    return meta
+
 func _get_current_tab_data() -> Array:
     var entries: Array = []
 
-    if Engine.has_singleton("MetaProgress"):
-        var meta := MetaProgress
+    var meta := _get_meta_progress()
+    if meta != null:
         if _current_tab_index == TAB_TOTEMS:
             entries = meta.get_all_totem_entries()
         elif _current_tab_index == TAB_SPROUTS:
             entries = meta.get_all_sprout_entries()
         else:
             entries = meta.get_all_tile_entries()
+        print("Collection: loaded %d entries from MetaProgress for tab %d" % [entries.size(), _current_tab_index])
 
     if entries.is_empty() and Engine.has_singleton("DataDB"):
         var db := DataDB
@@ -81,6 +92,7 @@ func _get_current_tab_data() -> Array:
             entries = _build_entries_from_defs(db.sprout_defs.values())
         else:
             entries = _build_entries_from_defs(db.tile_defs.values())
+        print("Collection: loaded %d fallback entries from DataDB for tab %d" % [entries.size(), _current_tab_index])
 
     return entries
 
