@@ -94,9 +94,9 @@ func _load_totems_from_meta() -> void:
 
     if not any_unlocked:
         for i in range(_totem_entries.size()):
-            var e = _totem_entries[i]
+            var e: Dictionary = _totem_entries[i]
             if e is Dictionary and str(e.get("id", "")) == "totem.heartseed":
-                var clone := e.duplicate()
+                var clone: Dictionary = e.duplicate(true)
                 clone["unlocked"] = true
                 _totem_entries[i] = clone
                 any_unlocked = true
@@ -246,7 +246,11 @@ func _continue_if_ready() -> void:
         return
     var ctx: RunContext = null
     if Engine.has_singleton("RunContext"):
-        ctx = RunContext
+        var singleton := Engine.get_singleton("RunContext")
+        if singleton is RunContext:
+            ctx = singleton as RunContext
+        else:
+            print("TotemSelect: WARNING - RunContext singleton type mismatch")
     else:
         var run_context_path := NodePath("/root/RunContext")
         ctx = get_node_or_null(run_context_path) as RunContext
