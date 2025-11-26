@@ -1,5 +1,4 @@
 extends Node
-class_name MetaProgress
 
 var unlocked_totems: Dictionary = {}
 var unlocked_sprouts: Dictionary = {}
@@ -35,25 +34,25 @@ func _ready() -> void:
 	])
 
 func _init_defaults() -> void:
-        unlocked_totems.clear()
-        unlocked_sprouts.clear()
-        unlocked_tiles.clear()
+		unlocked_totems.clear()
+		unlocked_sprouts.clear()
+		unlocked_tiles.clear()
 
-        for def in all_totem_defs:
-                var id := str(def.get("id", ""))
-                if not id.is_empty():
-                        unlocked_totems[id] = true
+		for def in all_totem_defs:
+				var id := str(def.get("id", ""))
+				if not id.is_empty():
+						unlocked_totems[id] = true
 
-        for def in all_sprout_defs:
-                var id := str(def.get("id", ""))
-                if not id.is_empty():
-                        unlocked_sprouts[id] = true
+		for def in all_sprout_defs:
+				var id := str(def.get("id", ""))
+				if not id.is_empty():
+						unlocked_sprouts[id] = true
 
-        for def in all_tile_defs:
-                var id := str(def.get("id", ""))
-                if not id.is_empty():
-                        unlocked_tiles[id] = true
-        print("MetaProgress: unlocked_totems =", unlocked_totems)
+		for def in all_tile_defs:
+				var id := str(def.get("id", ""))
+				if not id.is_empty():
+						unlocked_tiles[id] = true
+		print("MetaProgress: unlocked_totems =", unlocked_totems)
 
 func get_all_totem_entries() -> Array:
 	var arr: Array = []
