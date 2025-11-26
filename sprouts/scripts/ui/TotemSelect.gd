@@ -55,6 +55,20 @@ func _load_totems_from_meta() -> void:
     var meta := MetaProgress
     _totem_entries = meta.get_all_totem_entries()
     print("TotemSelect: loaded %d totems from MetaProgress" % _totem_entries.size())
+    print("TotemSelect: entries =", _totem_entries)
+    var has_unlocked := false
+    for entry in _totem_entries:
+        if entry.get("unlocked", false):
+            has_unlocked = true
+            break
+    if not has_unlocked:
+        for def in meta.all_totem_defs:
+            if str(def.get("id", "")) == "totem.heartseed":
+                var fallback_entry := def.duplicate(true)
+                fallback_entry["unlocked"] = true
+                _totem_entries.append(fallback_entry)
+                print("TotemSelect: added fallback unlocked Heartseed totem")
+                break
 
 func _collect_difficulty_buttons() -> void:
     _difficulty_buttons.clear()

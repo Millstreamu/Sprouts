@@ -46,6 +46,7 @@ func _init_defaults() -> void:
     unlocked_tiles["tile.nature.whispering_pine_forest"] = true
     unlocked_tiles["tile.water.mirror_pool"] = true
     unlocked_tiles["tile.earth.stone_vein"] = true
+    print("MetaProgress: unlocked_totems =", unlocked_totems)
 
 func get_all_totem_entries() -> Array:
     var arr: Array = []

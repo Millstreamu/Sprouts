@@ -111,6 +111,7 @@ func _populate_cards_for_current_tab() -> void:
         print("Collection: card_scene is NULL, no cards will be created")
         return
     var data: Array = _get_current_tab_data()
+    print("Collection: data size for tab", _current_tab_index, "=", data.size())
     print("Collection: cards populated = %d" % data.size())
     for entry in data:
         var card := card_scene.instantiate() as Control
@@ -123,6 +124,7 @@ func _populate_cards_for_current_tab() -> void:
             else:
                 label.text = "Locked"
         card.set_meta("card_id", entry.get("id", ""))
+    print("Collection: grid child count =", _card_grid.get_child_count())
     _update_card_selection()
 
 func _update_card_selection() -> void:
