@@ -64,7 +64,7 @@ func _load_totems_from_meta() -> void:
     if not has_unlocked:
         for def in meta.all_totem_defs:
             if str(def.get("id", "")) == "totem.heartseed":
-                var fallback_entry := def.duplicate(true)
+                var fallback_entry: Dictionary = def.duplicate(true)
                 fallback_entry["unlocked"] = true
                 _totem_entries.append(fallback_entry)
                 print("TotemSelect: added fallback unlocked Heartseed totem")
