@@ -588,3 +588,71 @@ Player manually reports issues
 Codex fixes or adjusts logic as needed
 
 END OF DOCUMENT — Sprouts Design Document (v4)
+
+---
+
+## Deployment configuration (Task 22)
+
+This repository now includes a deployment-ready backend service (FastAPI), containerization, and local Postgres orchestration.
+
+### Architecture
+
+- **Frontend/game client:** Godot project in `sprouts/`.
+  - **Local run:** open `sprouts/project.godot` in Godot 4.4+ and run from editor.
+  - **Production strategy:** export a native desktop build (Windows/Linux/macOS) or Web export from Godot and distribute via your preferred channel (Steam/itch/self-hosted web).
+- **Backend API:** FastAPI app in `backend/app/` with:
+  - `GET /healthz` for liveness.
+  - `GET /readyz` for readiness (includes database connectivity check).
+- **Database:** PostgreSQL 16 (development via Docker Compose).
+
+### Files added for deployment
+
+- `backend/Dockerfile` - production container image build for backend API.
+- `backend/start.sh` - deployment-ready startup command wrapper.
+- `docker-compose.yml` - local stack for backend + Postgres with health checks.
+- `requirements.txt` / `requirements-dev.txt` - backend runtime and test dependencies.
+- `.env.example` - environment variable template (no secrets hardcoded).
+
+### Required environment variables
+
+Set these in your deployment platform secret/config system (or `.env` for local dev):
+
+- `APP_ENV` (example: `production`)
+- `APP_HOST` (example: `0.0.0.0`)
+- `APP_PORT` (example: `8000`)
+- `LOG_LEVEL` (example: `info`)
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD` (**secret**; do not commit)
+
+### Local deployment (Docker Compose)
+
+1. Create environment file:
+   - `cp .env.example .env`
+   - Update `POSTGRES_PASSWORD`.
+2. Start services:
+   - `docker compose up --build`
+3. Validate endpoints:
+   - `curl http://localhost:8000/healthz`
+   - `curl http://localhost:8000/readyz`
+
+### Production deployment guidance
+
+1. Build and run backend container from `backend/Dockerfile`.
+2. Provide environment variables through your platform (Kubernetes secrets, ECS task env, Render/Fly/Heroku config vars, etc.).
+3. Use managed Postgres in production; point backend to it with `POSTGRES_*` variables.
+4. Configure health checks:
+   - **Liveness:** `/healthz`
+   - **Readiness:** `/readyz`
+5. Scale backend independently of the Godot client distribution.
+
+### Local non-Docker backend run
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+./backend/start.sh
+```
+
