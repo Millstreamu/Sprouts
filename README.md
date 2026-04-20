@@ -588,3 +588,46 @@ Player manually reports issues
 Codex fixes or adjusts logic as needed
 
 END OF DOCUMENT — Sprouts Design Document (v4)
+
+## Manager Dashboard Frontend (Task 20)
+
+A lightweight static frontend is available in `dashboard/` so a business owner can monitor system status.
+
+### Views
+
+- Manager Summary
+- Open Tasks
+- Low Stock Products
+- Recent Orders
+- Pending Approvals
+- Agent Activity
+
+### Backend API mapping
+
+The frontend reads JSON from these endpoints (default base URL `http://localhost:8000`):
+
+- `GET /api/manager/summary` → manager summary
+- `GET /api/tasks/open` → open tasks
+- `GET /api/products/low-stock` → low stock products
+- `GET /api/orders/recent` → recent orders
+- `GET /api/approvals/pending` → pending approvals
+- `GET /api/agents/activity` → agent activity
+
+To point at another backend, set `window.SPROUTS_API_BASE_URL` before loading `dashboard/app.js`, or set `localStorage.sprouts_api_base`.
+
+### Run locally
+
+```bash
+npm install
+npm run start
+```
+
+Then open `http://localhost:4173`.
+
+### Validation commands
+
+```bash
+npm install
+npm run check
+npm test
+```
