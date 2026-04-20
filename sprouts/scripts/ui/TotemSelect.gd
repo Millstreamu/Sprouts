@@ -45,7 +45,7 @@ func _ready() -> void:
 	_update_totem_display()
 	_update_difficulty_focus()
 	_update_status_label()
-	print("TotemSelect: ready")
+	_log_info("totem_select.ready", "Totem select screen ready", {})
 
 func _get_meta_progress() -> MetaProgress:
 	var meta: MetaProgress = null
@@ -219,19 +219,24 @@ func _confirm_totem() -> void:
 		return
 	var current: Dictionary = _totem_entries[_current_totem_index]
 	if not current.get("unlocked", false):
-		print("TotemSelect: selected totem is locked")
+		var rejected := _error_response("totem.locked", "Selected totem is locked", {"totem_id": str(current.get("id", ""))})
+		_log_warn("totem_select.rejected", "Locked totem selection rejected", rejected)
+		_audit("rejected_action", "player", "rejected", str(current.get("id", "")), {"action": "confirm_totem"})
 		return
-	print("TotemSelect: totem confirmed: %s" % current.get("id", ""))
+	_log_info("totem_select.confirmed", "Totem confirmed", {"totem_id": str(current.get("id", ""))})
+	_audit("approval", "player", "approved", str(current.get("id", "")), {"action": "confirm_totem"})
 	_selected_difficulty = -1
 	_update_difficulty_focus()
 	_enter_difficulty_mode()
 
 func _confirm_difficulty() -> void:
 	if _selected_difficulty < DIFF_EASY or _selected_difficulty > DIFF_HARD:
-		print("TotemSelect: no difficulty selected yet")
+		_log_warn("totem_select.rejected", "Difficulty confirmation rejected", _error_response("difficulty.missing", "No difficulty selected", {}))
+		_audit("rejected_action", "player", "rejected", "difficulty", {"action": "confirm_difficulty"})
 		return
 	_can_continue = true
-	print("TotemSelect: difficulty confirmed: %d" % _selected_difficulty)
+	_log_info("totem_select.difficulty_confirmed", "Difficulty confirmed", {"difficulty": _selected_difficulty})
+	_audit("approval", "player", "approved", "difficulty", {"difficulty": _selected_difficulty})
 	_update_status_label()
 
 func _continue_if_ready() -> void:
@@ -242,7 +247,9 @@ func _continue_if_ready() -> void:
 	var current: Dictionary = _totem_entries[_current_totem_index]
 	var totem_id: String = str(current.get("id", ""))
 	if not bool(current.get("unlocked", false)):
-		print("TotemSelect: cannot continue with locked totem %s" % totem_id)
+		var err := _error_response("totem.locked", "Cannot continue with locked totem", {"totem_id": totem_id})
+		_log_warn("totem_select.rejected", "Cannot continue with locked totem", err)
+		_audit("rejected_action", "player", "rejected", totem_id, {"action": "continue"})
 		return
 	var ctx: RunContext = null
 	if Engine.has_singleton("RunContext"):
@@ -261,7 +268,10 @@ func _continue_if_ready() -> void:
 		ctx.debug_print()
 	else:
 		print("TotemSelect: WARNING - RunContext singleton not found")
-	print("TotemSelect: CONTINUE with totem %s, difficulty %d" % [totem_id, _selected_difficulty])
+	if ctx:
+		ctx.ensure_trace_id()
+	_log_info("totem_select.continue", "Continuing to sprout select", {"totem_id": totem_id, "difficulty": _selected_difficulty})
+	_audit("sensitive_action", "player", "approved", "run_setup", {"action": "start_run_setup", "totem_id": totem_id, "difficulty": _selected_difficulty})
 	get_tree().change_scene_to_file("res://scenes/run_setup/SproutSelect.tscn")
 
 func _go_back_to_main_menu() -> void:
@@ -303,3 +313,30 @@ func _input(event: InputEvent) -> void:
 		elif Input.is_action_just_pressed("ui_right"):
 			_change_difficulty(1)
 			accept_event()
+
+func _trace_id() -> String:
+	var ctx := get_node_or_null(NodePath("/root/RunContext")) as RunContext
+	if ctx != null:
+		return ctx.ensure_trace_id()
+	return ""
+
+func _log_info(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_info(event, message, context, _trace_id())
+	else:
+		print("TotemSelect: %s %s" % [event, context])
+
+func _log_warn(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_warn(event, message, context, _trace_id())
+	else:
+		print("TotemSelect: %s %s" % [event, context])
+
+func _error_response(code: String, message: String, details: Dictionary) -> Dictionary:
+	if Engine.has_singleton("Observability"):
+		return Observability.error_response(code, message, _trace_id(), details)
+	return {"ok": false, "error": {"code": code, "message": message, "details": details}}
+
+func _audit(event_type: String, actor: String, outcome: String, target: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.audit(event_type, actor, outcome, target, context, _trace_id())

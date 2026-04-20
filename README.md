@@ -589,72 +589,52 @@ Codex fixes or adjusts logic as needed
 
 END OF DOCUMENT — Sprouts Design Document (v4)
 
----
+## Observability, Audit Trail, and Error Tracking
 
-## Local Authentication + Role-Based Access Control (Task 21)
+Sprouts now includes a centralized observability layer via the `Observability` AutoLoad singleton (`res://scripts/backend/Observability.gd`).
 
-A lightweight FastAPI service is included for basic authentication and authorization.
+### Structured logging
+- Logs are emitted as JSON with:
+  - `timestamp`
+  - `level`
+  - `event`
+  - `message`
+  - `session_id`
+  - `trace_id` (run/request correlation)
+  - `event_sequence`
+  - `context`
+- Core backend systems (`DataDB`, `MetaProgress`, `ChallengeContext`, `CommuneManager`, `RunContext`, and key world/setup flows) now log through this structure.
 
-### Roles
+### Audit trail
+Audit records are generated for operationally important events:
+- **Approvals** (e.g., confirmed totem/difficulty and challenge completions)
+- **Rejected actions** (e.g., attempting locked selections or invalid turn actions)
+- **Inventory-affecting events** (e.g., unlocks, tile placement/resource generation)
+- **Sensitive user actions** (e.g., initiating run setup / launching a run)
 
-Supported application roles:
-- `owner`
-- `manager`
-- `staff`
-- `read_only`
+Audit entries include:
+- `record_id`, `timestamp`, `event_type`, `actor`, `outcome`, `target`, `trace_id`, and `context`.
 
-### Access Matrix
+### Error response format
+`Observability.error_response(...)` produces a consistent envelope:
 
-| Endpoint | owner | manager | staff | read_only |
-| --- | --- | --- | --- | --- |
-| `POST /auth/login` | ✅ | ✅ | ✅ | ✅ |
-| `GET /approvals/{approval_id}` | ✅ | ✅ | ❌ | ❌ |
-| `GET /manager/summary` | ✅ | ✅ | ❌ | ❌ |
-| `GET /agent/logs` | ✅ | ✅ | ❌ | ❌ |
-| `GET /admin/config` (future config/admin pattern) | ✅ | ❌ | ❌ | ❌ |
-| `GET /tasks` | ✅ | ✅ | ✅ | ✅ |
-
-### Security Design
-
-- User records are stored in SQLite (`data/auth.db`) with per-user random salts.
-- Passwords are hashed using PBKDF2-HMAC-SHA256 (`210000` iterations).
-- Raw passwords are never stored.
-- API responses and handlers avoid logging secrets or raw credentials.
-- Auth uses bearer tokens with an in-memory token store and expiration.
-
-### Local Setup
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "domain.error_code",
+    "message": "Human-readable summary",
+    "request_id": "req_...",
+    "details": {}
+  }
+}
 ```
 
-Create local users:
+### Correlation/trace IDs
+- Run-scoped `trace_id` values are created in `RunContext` and reused in downstream logs/audits.
+- This allows grouping setup actions, world events, and outcomes under a shared correlation key.
 
-```bash
-python -m backend.seed_users --username owner --password owner-pass --role owner
-python -m backend.seed_users --username manager --password manager-pass --role manager
-python -m backend.seed_users --username staff --password staff-pass --role staff
-python -m backend.seed_users --username reader --password reader-pass --role read_only
-```
-
-Run the API:
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-### Security Assumptions / Caveats
-
-- Token state is process-local in memory; restart invalidates existing sessions.
-- This is intentionally simple and production-friendly for a single service process, but multi-instance deployments should replace `TokenStore` with shared/session-backed tokens (for example, signed JWT or Redis-backed sessions).
-- TLS termination and request rate limiting are assumed to be handled by deployment infrastructure.
-
-### Tests
-
-```bash
-pytest -q
-```
-
-The tests validate login failures, token enforcement, and role-based endpoint restrictions.
+### Sensitive data handling
+- Log/audit context is sanitized recursively.
+- Any context keys containing sensitive markers (like `password`, `secret`, `token`, `auth`, `cookie`, `api_key`) are redacted as `[REDACTED]`.
+- Raw credentials/session secrets are intentionally excluded from logs.

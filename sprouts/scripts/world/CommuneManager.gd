@@ -71,7 +71,10 @@ var _difficulty_multipliers: Dictionary = {
 }
 
 func _ready() -> void:
-	print("CommuneManager: ready")
+	if Engine.has_singleton("Observability"):
+		Observability.log_info("commune.ready", "Commune manager ready", {})
+	else:
+		print("CommuneManager: ready")
 
 func _get_category_weight_for(totem_id: String, difficulty: String, category: String) -> float:
 	var base_map: Dictionary = _base_category_weights.get(totem_id, _base_category_weights.get("default", {}))
@@ -157,11 +160,17 @@ func generate_offers(
 		weights.append(weight)
 
 	if candidates.is_empty():
-		print("CommuneManager: no candidates for offers")
+		if Engine.has_singleton("Observability"):
+			Observability.log_warn("commune.no_candidates", "No candidates for commune offers", {"totem_id": totem_id, "difficulty": difficulty})
+		else:
+			print("CommuneManager: no candidates for offers")
 		return []
 
 	var indices: Array[int] = _weighted_pick_indices(weights, offer_count)
 	var offers: Array = []
+
+	if Engine.has_singleton("Observability"):
+		Observability.log_agent_action("commune_manager", "generate_offers", "started", {"offer_count": offer_count, "candidate_count": candidates.size()}, _resolve_trace_id())
 
 	for idx in indices:
 		if idx < 0 or idx >= candidates.size():
@@ -189,4 +198,11 @@ func generate_offers(
 			"description": description,
 		})
 
+	if Engine.has_singleton("Observability"):
+		Observability.log_agent_action("commune_manager", "generate_offers", "completed", {"offer_ids": offers.map(func(o): return o.get("id", ""))}, _resolve_trace_id())
 	return offers
+
+func _resolve_trace_id() -> String:
+	if Engine.has_singleton("RunContext"):
+		return RunContext.ensure_trace_id()
+	return ""
