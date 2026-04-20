@@ -591,70 +591,68 @@ END OF DOCUMENT — Sprouts Design Document (v4)
 
 ---
 
-## Local Authentication + Role-Based Access Control (Task 21)
+## Deployment configuration (Task 22)
 
-A lightweight FastAPI service is included for basic authentication and authorization.
+This repository now includes a deployment-ready backend service (FastAPI), containerization, and local Postgres orchestration.
 
-### Roles
+### Architecture
 
-Supported application roles:
-- `owner`
-- `manager`
-- `staff`
-- `read_only`
+- **Frontend/game client:** Godot project in `sprouts/`.
+  - **Local run:** open `sprouts/project.godot` in Godot 4.4+ and run from editor.
+  - **Production strategy:** export a native desktop build (Windows/Linux/macOS) or Web export from Godot and distribute via your preferred channel (Steam/itch/self-hosted web).
+- **Backend API:** FastAPI app in `backend/app/` with:
+  - `GET /healthz` for liveness.
+  - `GET /readyz` for readiness (includes database connectivity check).
+- **Database:** PostgreSQL 16 (development via Docker Compose).
 
-### Access Matrix
+### Files added for deployment
 
-| Endpoint | owner | manager | staff | read_only |
-| --- | --- | --- | --- | --- |
-| `POST /auth/login` | ✅ | ✅ | ✅ | ✅ |
-| `GET /approvals/{approval_id}` | ✅ | ✅ | ❌ | ❌ |
-| `GET /manager/summary` | ✅ | ✅ | ❌ | ❌ |
-| `GET /agent/logs` | ✅ | ✅ | ❌ | ❌ |
-| `GET /admin/config` (future config/admin pattern) | ✅ | ❌ | ❌ | ❌ |
-| `GET /tasks` | ✅ | ✅ | ✅ | ✅ |
+- `backend/Dockerfile` - production container image build for backend API.
+- `backend/start.sh` - deployment-ready startup command wrapper.
+- `docker-compose.yml` - local stack for backend + Postgres with health checks.
+- `requirements.txt` / `requirements-dev.txt` - backend runtime and test dependencies.
+- `.env.example` - environment variable template (no secrets hardcoded).
 
-### Security Design
+### Required environment variables
 
-- User records are stored in SQLite (`data/auth.db`) with per-user random salts.
-- Passwords are hashed using PBKDF2-HMAC-SHA256 (`210000` iterations).
-- Raw passwords are never stored.
-- API responses and handlers avoid logging secrets or raw credentials.
-- Auth uses bearer tokens with an in-memory token store and expiration.
+Set these in your deployment platform secret/config system (or `.env` for local dev):
 
-### Local Setup
+- `APP_ENV` (example: `production`)
+- `APP_HOST` (example: `0.0.0.0`)
+- `APP_PORT` (example: `8000`)
+- `LOG_LEVEL` (example: `info`)
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD` (**secret**; do not commit)
+
+### Local deployment (Docker Compose)
+
+1. Create environment file:
+   - `cp .env.example .env`
+   - Update `POSTGRES_PASSWORD`.
+2. Start services:
+   - `docker compose up --build`
+3. Validate endpoints:
+   - `curl http://localhost:8000/healthz`
+   - `curl http://localhost:8000/readyz`
+
+### Production deployment guidance
+
+1. Build and run backend container from `backend/Dockerfile`.
+2. Provide environment variables through your platform (Kubernetes secrets, ECS task env, Render/Fly/Heroku config vars, etc.).
+3. Use managed Postgres in production; point backend to it with `POSTGRES_*` variables.
+4. Configure health checks:
+   - **Liveness:** `/healthz`
+   - **Readiness:** `/readyz`
+5. Scale backend independently of the Godot client distribution.
+
+### Local non-Docker backend run
 
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install -r requirements-dev.txt
+./backend/start.sh
 ```
 
-Create local users:
-
-```bash
-python -m backend.seed_users --username owner --password owner-pass --role owner
-python -m backend.seed_users --username manager --password manager-pass --role manager
-python -m backend.seed_users --username staff --password staff-pass --role staff
-python -m backend.seed_users --username reader --password reader-pass --role read_only
-```
-
-Run the API:
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-### Security Assumptions / Caveats
-
-- Token state is process-local in memory; restart invalidates existing sessions.
-- This is intentionally simple and production-friendly for a single service process, but multi-instance deployments should replace `TokenStore` with shared/session-backed tokens (for example, signed JWT or Redis-backed sessions).
-- TLS termination and request rate limiting are assumed to be handled by deployment infrastructure.
-
-### Tests
-
-```bash
-pytest -q
-```
-
-The tests validate login failures, token enforcement, and role-based endpoint restrictions.
