@@ -589,45 +589,72 @@ Codex fixes or adjusts logic as needed
 
 END OF DOCUMENT — Sprouts Design Document (v4)
 
-## Manager Dashboard Frontend (Task 20)
+---
 
-A lightweight static frontend is available in `dashboard/` so a business owner can monitor system status.
+## Local Authentication + Role-Based Access Control (Task 21)
 
-### Views
+A lightweight FastAPI service is included for basic authentication and authorization.
 
-- Manager Summary
-- Open Tasks
-- Low Stock Products
-- Recent Orders
-- Pending Approvals
-- Agent Activity
+### Roles
 
-### Backend API mapping
+Supported application roles:
+- `owner`
+- `manager`
+- `staff`
+- `read_only`
 
-The frontend reads JSON from these endpoints (default base URL `http://localhost:8000`):
+### Access Matrix
 
-- `GET /api/manager/summary` → manager summary
-- `GET /api/tasks/open` → open tasks
-- `GET /api/products/low-stock` → low stock products
-- `GET /api/orders/recent` → recent orders
-- `GET /api/approvals/pending` → pending approvals
-- `GET /api/agents/activity` → agent activity
+| Endpoint | owner | manager | staff | read_only |
+| --- | --- | --- | --- | --- |
+| `POST /auth/login` | ✅ | ✅ | ✅ | ✅ |
+| `GET /approvals/{approval_id}` | ✅ | ✅ | ❌ | ❌ |
+| `GET /manager/summary` | ✅ | ✅ | ❌ | ❌ |
+| `GET /agent/logs` | ✅ | ✅ | ❌ | ❌ |
+| `GET /admin/config` (future config/admin pattern) | ✅ | ❌ | ❌ | ❌ |
+| `GET /tasks` | ✅ | ✅ | ✅ | ✅ |
 
-To point at another backend, set `window.SPROUTS_API_BASE_URL` before loading `dashboard/app.js`, or set `localStorage.sprouts_api_base`.
+### Security Design
 
-### Run locally
+- User records are stored in SQLite (`data/auth.db`) with per-user random salts.
+- Passwords are hashed using PBKDF2-HMAC-SHA256 (`210000` iterations).
+- Raw passwords are never stored.
+- API responses and handlers avoid logging secrets or raw credentials.
+- Auth uses bearer tokens with an in-memory token store and expiration.
 
-```bash
-npm install
-npm run start
-```
-
-Then open `http://localhost:4173`.
-
-### Validation commands
+### Local Setup
 
 ```bash
-npm install
-npm run check
-npm test
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
+
+Create local users:
+
+```bash
+python -m backend.seed_users --username owner --password owner-pass --role owner
+python -m backend.seed_users --username manager --password manager-pass --role manager
+python -m backend.seed_users --username staff --password staff-pass --role staff
+python -m backend.seed_users --username reader --password reader-pass --role read_only
+```
+
+Run the API:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+### Security Assumptions / Caveats
+
+- Token state is process-local in memory; restart invalidates existing sessions.
+- This is intentionally simple and production-friendly for a single service process, but multi-instance deployments should replace `TokenStore` with shared/session-backed tokens (for example, signed JWT or Redis-backed sessions).
+- TLS termination and request rate limiting are assumed to be handled by deployment infrastructure.
+
+### Tests
+
+```bash
+pytest -q
+```
+
+The tests validate login failures, token enforcement, and role-based endpoint restrictions.
