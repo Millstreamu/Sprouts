@@ -16,6 +16,8 @@ config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
+Observability="*res://scripts/backend/Observability.gd"
+RunContext="*res://scripts/meta/RunContext.gd"
 
 DataDB="*res://scripts/data/DataDB.gd"
 MetaProgress="*res://scripts/meta/MetaProgress.gd"

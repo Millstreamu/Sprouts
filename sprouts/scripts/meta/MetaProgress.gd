@@ -27,32 +27,37 @@ var all_tile_defs: Array = [
 
 func _ready() -> void:
 	_init_defaults()
-	print("MetaProgress: ready (totems=%d, sprouts=%d, tiles=%d)" % [
-		all_totem_defs.size(),
-		all_sprout_defs.size(),
-		all_tile_defs.size()
-	])
+	_log_info("meta.ready", "MetaProgress ready", {
+		"totems": all_totem_defs.size(),
+		"sprouts": all_sprout_defs.size(),
+		"tiles": all_tile_defs.size()
+	})
 
 func _init_defaults() -> void:
-		unlocked_totems.clear()
-		unlocked_sprouts.clear()
-		unlocked_tiles.clear()
+	unlocked_totems.clear()
+	unlocked_sprouts.clear()
+	unlocked_tiles.clear()
 
-		for def in all_totem_defs:
-				var id := str(def.get("id", ""))
-				if not id.is_empty():
-						unlocked_totems[id] = true
+	for def in all_totem_defs:
+		var id := str(def.get("id", ""))
+		if not id.is_empty():
+			unlocked_totems[id] = true
 
-		for def in all_sprout_defs:
-				var id := str(def.get("id", ""))
-				if not id.is_empty():
-						unlocked_sprouts[id] = true
+	for def in all_sprout_defs:
+		var id := str(def.get("id", ""))
+		if not id.is_empty():
+			unlocked_sprouts[id] = true
 
-		for def in all_tile_defs:
-				var id := str(def.get("id", ""))
-				if not id.is_empty():
-						unlocked_tiles[id] = true
-		print("MetaProgress: unlocked_totems =", unlocked_totems)
+	for def in all_tile_defs:
+		var id := str(def.get("id", ""))
+		if not id.is_empty():
+			unlocked_tiles[id] = true
+
+	_log_info("meta.bootstrap_unlocks", "Initialized default unlock state", {
+		"totem_count": unlocked_totems.size(),
+		"sprout_count": unlocked_sprouts.size(),
+		"tile_count": unlocked_tiles.size()
+	})
 
 func get_all_totem_entries() -> Array:
 	var arr: Array = []
@@ -94,19 +99,26 @@ func get_all_tile_entries() -> Array:
 	return arr
 
 func unlock_totem(id: String) -> void:
-	if not unlocked_totems.get(id, false):
-		unlocked_totems[id] = true
-		print("MetaProgress: unlocked totem %s" % id)
+	_unlock_entry(unlocked_totems, id, "totem")
 
 func unlock_sprout(id: String) -> void:
-	if not unlocked_sprouts.get(id, false):
-		unlocked_sprouts[id] = true
-		print("MetaProgress: unlocked sprout %s" % id)
+	_unlock_entry(unlocked_sprouts, id, "sprout")
 
 func unlock_tile(id: String) -> void:
-	if not unlocked_tiles.get(id, false):
-		unlocked_tiles[id] = true
-		print("MetaProgress: unlocked tile %s" % id)
+	_unlock_entry(unlocked_tiles, id, "tile")
+
+func _unlock_entry(pool: Dictionary, id: String, item_type: String) -> void:
+	if id.is_empty():
+		return
+	if bool(pool.get(id, false)):
+		_log_debug("meta.unlock_skipped", "Unlock skipped; already unlocked", {"id": id, "item_type": item_type})
+		return
+	pool[id] = true
+	_log_info("meta.unlock", "Unlock granted", {"id": id, "item_type": item_type})
+	_audit("inventory_change", "system", "approved", id, {
+		"item_type": item_type,
+		"change": "unlock"
+	})
 
 func is_totem_unlocked(id: String) -> bool:
 	return bool(unlocked_totems.get(id, false))
@@ -116,3 +128,19 @@ func is_sprout_unlocked(id: String) -> bool:
 
 func is_tile_unlocked(id: String) -> bool:
 	return bool(unlocked_tiles.get(id, false))
+
+func _log_info(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_info(event, message, context)
+	else:
+		print("MetaProgress: %s %s" % [event, context])
+
+func _log_debug(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_debug(event, message, context)
+	else:
+		print("MetaProgress: %s %s" % [event, context])
+
+func _audit(event_type: String, actor: String, outcome: String, target: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.audit(event_type, actor, outcome, target, context)

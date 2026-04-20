@@ -588,3 +588,53 @@ Player manually reports issues
 Codex fixes or adjusts logic as needed
 
 END OF DOCUMENT — Sprouts Design Document (v4)
+
+## Observability, Audit Trail, and Error Tracking
+
+Sprouts now includes a centralized observability layer via the `Observability` AutoLoad singleton (`res://scripts/backend/Observability.gd`).
+
+### Structured logging
+- Logs are emitted as JSON with:
+  - `timestamp`
+  - `level`
+  - `event`
+  - `message`
+  - `session_id`
+  - `trace_id` (run/request correlation)
+  - `event_sequence`
+  - `context`
+- Core backend systems (`DataDB`, `MetaProgress`, `ChallengeContext`, `CommuneManager`, `RunContext`, and key world/setup flows) now log through this structure.
+
+### Audit trail
+Audit records are generated for operationally important events:
+- **Approvals** (e.g., confirmed totem/difficulty and challenge completions)
+- **Rejected actions** (e.g., attempting locked selections or invalid turn actions)
+- **Inventory-affecting events** (e.g., unlocks, tile placement/resource generation)
+- **Sensitive user actions** (e.g., initiating run setup / launching a run)
+
+Audit entries include:
+- `record_id`, `timestamp`, `event_type`, `actor`, `outcome`, `target`, `trace_id`, and `context`.
+
+### Error response format
+`Observability.error_response(...)` produces a consistent envelope:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "domain.error_code",
+    "message": "Human-readable summary",
+    "request_id": "req_...",
+    "details": {}
+  }
+}
+```
+
+### Correlation/trace IDs
+- Run-scoped `trace_id` values are created in `RunContext` and reused in downstream logs/audits.
+- This allows grouping setup actions, world events, and outcomes under a shared correlation key.
+
+### Sensitive data handling
+- Log/audit context is sanitized recursively.
+- Any context keys containing sensitive markers (like `password`, `secret`, `token`, `auth`, `cookie`, `api_key`) are redacted as `[REDACTED]`.
+- Raw credentials/session secrets are intentionally excluded from logs.

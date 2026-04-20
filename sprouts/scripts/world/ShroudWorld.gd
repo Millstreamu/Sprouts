@@ -239,7 +239,7 @@ func _ready() -> void:
 		)
 	else:
 		print("ShroudWorld: WARNING - RunContext singleton not found")
-	print("ShroudWorld: ready")
+	_log_info("world.ready", "Shroud world ready", {"grid_width": GRID_WIDTH, "grid_height": GRID_HEIGHT})
 
 func _get_current_difficulty_key() -> String:
 	if Engine.has_singleton("RunContext"):
@@ -1054,12 +1054,7 @@ func _generate_resources_for_turn() -> void:
 	_res_earth += add_earth
 	_res_souls += add_souls
 
-	print("ShroudWorld: resources gained this turn -> N:%d W:%d E:%d S:%d" % [
-		add_nature,
-		add_water,
-		add_earth,
-		add_souls
-	])
+	_log_inventory_event("world.resources_gained", "Resources gained for turn", {"nature": add_nature, "water": add_water, "earth": add_earth, "souls": add_souls, "turn": _turn_number})
 
 	_update_resource_label()
 
@@ -1076,7 +1071,7 @@ func _advance_overgrowth_and_groves() -> void:
 func _transform_overgrowth_to_grove(q: int, r: int) -> void:
 	_tiles[r][q] = TILE_ID_GROVE
 	_overgrowth_age[r][q] = 0
-	print("ShroudWorld: Overgrowth at (%d, %d) transformed into Grove" % [q, r])
+	_log_inventory_event("world.overgrowth_to_grove", "Overgrowth transformed to grove", {"q": q, "r": r})
 	_spawn_sprout_from_grove(q, r)
 	if is_instance_valid(_hex_grid):
 		_hex_grid.update()
@@ -1294,11 +1289,11 @@ func _toggle_sprout_registry() -> void:
 
 func _end_turn() -> void:
 	if _phase != PHASE_PLAYER:
-		print("ShroudWorld: cannot end turn, not in Player phase")
+		_log_rejected("world.end_turn", "Cannot end turn outside player phase", {"phase": _phase})
 		return
 
 	if not _has_placed_this_turn:
-		print("ShroudWorld: must place a tile before ending the turn")
+		_log_rejected("world.end_turn", "Cannot end turn before placing tile", {"turn": _turn_number})
 		return
 
 		_generate_resources_for_turn()
@@ -1320,25 +1315,25 @@ func _end_turn() -> void:
 func _place_tile_at_selector() -> void:
 	_clamp_selector()
 	if _phase != PHASE_PLAYER:
-		print("ShroudWorld: cannot place tile, not in Player phase")
+		_log_rejected("world.place_tile", "Cannot place tile outside player phase", {"phase": _phase})
 		return
 
 	if _current_tile_id.is_empty():
-		print("ShroudWorld: no current tile selected")
+		_log_rejected("world.place_tile", "No current tile selected", {})
 		return
 
 	if _has_placed_this_turn:
-		print("ShroudWorld: already placed a tile this turn")
+		_log_rejected("world.place_tile", "Already placed a tile this turn", {"turn": _turn_number})
 		return
 
 	if _tiles[_selector_r][_selector_q] != "":
-		print("ShroudWorld: tile already placed at (%d, %d)" % [_selector_q, _selector_r])
+		_log_rejected("world.place_tile", "Tile already present on cell", {"q": _selector_q, "r": _selector_r})
 		return
 
 	_tiles[_selector_r][_selector_q] = _current_tile_id
 	_overgrowth_age[_selector_r][_selector_q] = 0
 	_has_placed_this_turn = true
-	print("ShroudWorld: placed %s at (%d, %d)" % [_current_tile_id, _selector_q, _selector_r])
+	_log_inventory_event("world.tile_placed", "Tile placed", {"tile_id": _current_tile_id, "q": _selector_q, "r": _selector_r})
 	_current_tile_id = ""
 	_current_tile_name = ""
 	_update_tile_panel()
@@ -1988,3 +1983,30 @@ func _apply_decay_attack_result(result: String) -> void:
 
 		if is_instance_valid(_hex_grid):
 				_hex_grid.update()
+
+
+func _trace_id() -> String:
+	if get_tree().has_node(RUN_CONTEXT_PATH):
+		var ctx := get_tree().get_node(RUN_CONTEXT_PATH) as RunContext
+		if ctx != null:
+			return ctx.ensure_trace_id()
+	return ""
+
+func _log_info(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_info(event, message, context, _trace_id())
+	else:
+		print("ShroudWorld: %s %s" % [event, context])
+
+func _log_rejected(event: String, message: String, details: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		var err := Observability.error_response(event, message, _trace_id(), details)
+		Observability.log_warn(event, message, err, _trace_id())
+		Observability.audit("rejected_action", "player", "rejected", event, details, _trace_id())
+	else:
+		print("ShroudWorld: %s %s" % [event, details])
+
+func _log_inventory_event(event: String, message: String, context: Dictionary) -> void:
+	_log_info(event, message, context)
+	if Engine.has_singleton("Observability"):
+		Observability.audit("inventory_change", "world", "approved", event, context, _trace_id())

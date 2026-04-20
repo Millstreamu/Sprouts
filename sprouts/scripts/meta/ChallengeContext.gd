@@ -35,7 +35,7 @@ func _init_default_challenges() -> void:
 		"completed": false
 	}
 
-	print("ChallengeContext: initialized %d challenges" % challenges.size())
+	_log_info("challenge.init", "Initialized default challenges", {"count": challenges.size()})
 
 func get_all_challenges() -> Array:
 	var arr: Array = []
@@ -57,6 +57,7 @@ func _ensure_entry(id: String) -> void:
 			"target": 1,
 			"completed": false
 		}
+		_log_warn("challenge.missing_entry", "Created fallback challenge entry", {"id": id})
 
 func _update_progress(id: String, delta: int) -> void:
 	_ensure_entry(id)
@@ -78,12 +79,12 @@ func _update_progress(id: String, delta: int) -> void:
 		just_completed = true
 
 	challenges[id] = ch
-	print("ChallengeContext: %s progress = %d / %d (completed=%s)" % [
-		id,
-		progress,
-		target,
-		str(ch["completed"])
-	])
+	_log_info("challenge.progress", "Challenge progress updated", {
+		"id": id,
+		"progress": progress,
+		"target": target,
+		"completed": ch["completed"]
+	})
 
 	if just_completed:
 		_on_challenge_completed(id)
@@ -101,10 +102,11 @@ func update_after_run(result: String, run_stats: Dictionary) -> void:
 		_update_progress("challenge.destroy_totems_3", totems_destroyed)
 
 func _on_challenge_completed(id: String) -> void:
-	print("ChallengeContext: challenge completed -> %s" % id)
+	_log_info("challenge.completed", "Challenge completed", {"id": id})
+	_audit("approval", "challenge_system", "approved", id, {"reason": "completion"})
 
 	if not Engine.has_singleton("MetaProgress"):
-		print("ChallengeContext: MetaProgress not available, cannot grant unlocks")
+		_log_error("challenge.unlock_failed", "MetaProgress unavailable for challenge reward", {"id": id})
 		return
 
 	var meta := MetaProgress
@@ -118,3 +120,25 @@ func _on_challenge_completed(id: String) -> void:
 			meta.unlock_sprout("sprout.moss_golem")
 		_:
 			pass
+
+func _log_info(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_info(event, message, context)
+	else:
+		print("ChallengeContext: %s %s" % [event, context])
+
+func _log_warn(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_warn(event, message, context)
+	else:
+		print("ChallengeContext: %s %s" % [event, context])
+
+func _log_error(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_error(event, message, context)
+	else:
+		push_warning("ChallengeContext: %s %s" % [event, context])
+
+func _audit(event_type: String, actor: String, outcome: String, target: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.audit(event_type, actor, outcome, target, context)

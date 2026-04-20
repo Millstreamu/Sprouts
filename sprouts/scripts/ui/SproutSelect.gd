@@ -32,7 +32,7 @@ func _ready() -> void:
 	_populate_sprouts()
 	_update_selected_list()
 	_update_status_label()
-	print("SproutSelect: ready")
+	_log_info("sprout_select.ready", "Sprout select screen ready", {})
 
 func _load_sprouts_from_meta() -> void:
 	_sprout_entries.clear()
@@ -130,7 +130,9 @@ func _toggle_selected_current() -> void:
 	var unlocked: bool = card.get_meta("unlocked", false)
 
 	if not unlocked:
-		print("SproutSelect: cannot select locked sprout: %s" % id)
+		var err := _error_response("sprout.locked", "Cannot select locked sprout", {"sprout_id": id})
+		_log_warn("sprout_select.rejected", "Locked sprout selection rejected", err)
+		_audit("rejected_action", "player", "rejected", id, {"action": "toggle_sprout"})
 		return
 
 	if id in _selected_sprout_ids:
@@ -138,10 +140,11 @@ func _toggle_selected_current() -> void:
 		print("SproutSelect: deselected %s" % id)
 	else:
 		if _selected_sprout_ids.size() >= MAX_SELECTED_SPROUTS:
-			print("SproutSelect: cannot select more than %d sprouts" % MAX_SELECTED_SPROUTS)
+			_log_warn("sprout_select.rejected", "Max selected sprouts reached", _error_response("sprout.limit", "Maximum selected sprouts reached", {"limit": MAX_SELECTED_SPROUTS}))
+			_audit("rejected_action", "player", "rejected", "sprout_selection", {"action": "toggle_sprout", "limit": MAX_SELECTED_SPROUTS})
 			return
 		_selected_sprout_ids.append(id)
-		print("SproutSelect: selected %s" % id)
+		_log_info("sprout_select.selected", "Sprout selected", {"sprout_id": id})
 
 	_refresh_card_visuals()
 	_update_selected_list()
@@ -208,7 +211,10 @@ func _continue_if_ready() -> void:
 	else:
 		print("SproutSelect: WARNING - RunContext singleton not found")
 
-	print("SproutSelect: CONTINUE with sprouts: %s" % ", ".join(confirmed_ids))
+	if ctx != null:
+		ctx.ensure_trace_id()
+	_log_info("sprout_select.continue", "Starting world run", {"sprout_ids": confirmed_ids})
+	_audit("sensitive_action", "player", "approved", "run_start", {"action": "launch_run", "sprout_ids": confirmed_ids})
 	get_tree().change_scene_to_file("res://scenes/world/ShroudWorld.tscn")
 
 func _go_back_to_totem_select() -> void:
@@ -244,3 +250,30 @@ func _input(event: InputEvent) -> void:
 	elif Input.is_action_just_pressed("ui_down"):
 		_move_selection(4)
 		accept_event()
+
+func _trace_id() -> String:
+	var ctx := get_node_or_null(NodePath("/root/RunContext")) as RunContext
+	if ctx != null:
+		return ctx.ensure_trace_id()
+	return ""
+
+func _log_info(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_info(event, message, context, _trace_id())
+	else:
+		print("SproutSelect: %s %s" % [event, context])
+
+func _log_warn(event: String, message: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.log_warn(event, message, context, _trace_id())
+	else:
+		print("SproutSelect: %s %s" % [event, context])
+
+func _error_response(code: String, message: String, details: Dictionary) -> Dictionary:
+	if Engine.has_singleton("Observability"):
+		return Observability.error_response(code, message, _trace_id(), details)
+	return {"ok": false, "error": {"code": code, "message": message, "details": details}}
+
+func _audit(event_type: String, actor: String, outcome: String, target: String, context: Dictionary) -> void:
+	if Engine.has_singleton("Observability"):
+		Observability.audit(event_type, actor, outcome, target, context, _trace_id())
